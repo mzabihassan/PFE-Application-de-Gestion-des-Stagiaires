@@ -3,86 +3,94 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="dashboard-hero p-3 p-md-4 mb-4 fade-in">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative">
-        <div class="d-flex align-items-center gap-3">
-            <img src="{{ asset('images/ALTEN-Logo.wine.png') }}" alt="Alten Logo" class="brand-mark">
-            <div>
-                <div class="page-kicker"><i class="bi bi-grid-1x2"></i> Pilotage stages</div>
-                <h1 class="h3 mb-1">Tableau de bord</h1>
-                <p class="text-muted mb-0">Vue d'ensemble de l'activite des stages.</p>
-            </div>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <span class="badge text-bg-light border"><i class="bi bi-people me-1"></i> Suivi stagiaires</span>
-            <span class="badge text-bg-light border"><i class="bi bi-clipboard-check me-1"></i> Demandes</span>
-        </div>
-    </div>
-</div>
-<div class="d-none">
-    <div>
-        <h1 class="h3 mb-1">Tableau de bord</h1>
-        <p class="text-muted mb-0">Vue d'ensemble de l'activité des stages.</p>
-    </div>
-</div>
+<x-ui.page-header title="Tableau de bord" :kicker="$roleName" kicker-icon="bi-grid-1x2-fill"
+                  subtitle="Ce qui demande votre attention aujourd'hui." />
 
 @if(!empty($statCards))
     <div class="row g-3 mb-4">
         @foreach($statCards as $card)
-            <div class="col-sm-6 col-lg-3 fade-in">
-                <div class="card card-soft stat-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start gap-3">
-                            @php
-                                $statIcon = match (true) {
-                                    str_contains(strtolower($card['label']), 'stagiaire') => 'bi-mortarboard',
-                                    str_contains(strtolower($card['label']), 'stage') => 'bi-briefcase',
-                                    str_contains(strtolower($card['label']), 'tâche') || str_contains(strtolower($card['label']), 'tache') => 'bi-list-check',
-                                    str_contains(strtolower($card['label']), 'demande') => 'bi-file-earmark-text',
-                                    str_contains(strtolower($card['label']), 'attestation') => 'bi-award',
-                                    str_contains(strtolower($card['label']), 'absence') => 'bi-calendar-x',
-                                    default => 'bi-bar-chart-line',
-                                };
-                            @endphp
-                            <span class="module-icon"><i class="bi {{ $statIcon }}"></i></span>
-                            <div>
-                                <div class="text-muted">{{ $card['label'] }}</div>
-                                <div class="display-6 fw-semibold">{{ $card['value'] }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            @php
+                $statIcon = match (true) {
+                    str_contains(strtolower($card['label']), 'stagiaire') => 'bi-mortarboard',
+                    str_contains(strtolower($card['label']), 'stage') => 'bi-briefcase',
+                    str_contains(strtolower($card['label']), 'tâche') || str_contains(strtolower($card['label']), 'tache') => 'bi-list-check',
+                    str_contains(strtolower($card['label']), 'demande') => 'bi-file-earmark-text',
+                    str_contains(strtolower($card['label']), 'attestation') => 'bi-award',
+                    str_contains(strtolower($card['label']), 'absence') => 'bi-calendar-x',
+                    str_contains(strtolower($card['label']), 'message') => 'bi-chat-dots',
+                    default => 'bi-bar-chart-line',
+                };
+            @endphp
+            <div class="col-6 col-lg-3 fade-in">
+                <x-ui.stat-card :icon="$statIcon" :label="$card['label']" :value="$card['value']" />
             </div>
         @endforeach
     </div>
 @endif
 
+{{-- ── Action panels: what needs attention now ─────────────────────────── --}}
+@if(!empty($attention))
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <h2 class="h5 mb-0">À traiter</h2>
+        <span class="text-muted small">Priorisé pour votre rôle</span>
+    </div>
+    <div class="row g-3 mb-4">
+        @foreach($attention as $panel)
+            <div class="col-12 col-md-6 col-xl-4 fade-in">
+                <x-ui.panel :title="$panel['title']" :icon="$panel['icon']" :tone="$panel['tone']"
+                            :count="$panel['count']" :view-url="$panel['viewUrl']" :view-label="$panel['viewLabel']">
+                    @forelse($panel['items'] as $item)
+                        <a class="panel-item" href="{{ $item['url'] }}">
+                            <div class="panel-item-main">
+                                <div class="panel-item-title">{{ $item['title'] }}</div>
+                                <div class="panel-item-meta">{{ $item['meta'] }}</div>
+                            </div>
+                            @if(!empty($item['badge']))
+                                <span class="badge {{ $item['badge']['class'] }}">{{ $item['badge']['label'] }}</span>
+                            @endif
+                            <i class="bi bi-chevron-right panel-item-chev"></i>
+                        </a>
+                    @empty
+                        <div class="panel-empty">
+                            <i class="bi {{ $panel['tone'] === 'accent' ? 'bi-arrow-down-circle' : 'bi-check2-circle' }}"></i>
+                            <span>{{ $panel['empty'] }}</span>
+                        </div>
+                    @endforelse
+                </x-ui.panel>
+            </div>
+        @endforeach
+    </div>
+@endif
+
+{{-- ── Performance overview (managers / admin / HR) ─────────────────────── --}}
 @if($evaluatedInterns->count() > 0)
-    <div class="row g-4 mb-4">
-        <div class="col-lg-7 fade-in">
-            <div class="card card-soft h-100">
+    <div class="row g-3 mb-4">
+        <div class="col-12 fade-in">
+            <div class="card card-soft">
                 <div class="card-body">
-                    <h2 class="h5 mb-3 section-title"><span class="module-icon"><i class="bi bi-activity"></i></span> Scores automatiques des stagiaires</h2>
+                    <x-ui.section-title icon="bi-activity">Performance des stagiaires</x-ui.section-title>
                     <div class="table-responsive">
-                        <table class="table align-middle">
+                        <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
                                     <th>Stagiaire</th>
-                                    <th>Score</th>
+                                    <th style="width:200px">Score</th>
                                     <th>Statut</th>
-                                    <th class="text-end">Detail</th>
+                                    <th class="text-end">Détail</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($evaluatedInterns as $intern)
                                     @php $score = $intern->performanceScore(); @endphp
                                     <tr>
-                                        <td>{{ $intern->user?->full_name ?? 'Non lié' }}</td>
+                                        <td class="fw-semibold">{{ $intern->user?->full_name ?? 'Non lié' }}</td>
                                         <td>
                                             @if($score['has_data'] ?? false)
-                                                <div class="fw-semibold">{{ $score['score'] }}/100</div>
-                                                <div class="progress" style="height: 6px;">
-                                                    <div class="progress-bar bg-{{ $score['badge'] }}" style="width: {{ $score['score'] }}%"></div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="progress flex-grow-1">
+                                                        <div class="progress-bar bg-{{ $score['badge'] }}" style="width: {{ $score['score'] }}%"></div>
+                                                    </div>
+                                                    <span class="fw-semibold font-monospace small">{{ $score['score'] }}</span>
                                                 </div>
                                             @else
                                                 <span class="text-muted small">Aucun rapport</span>
@@ -103,72 +111,35 @@
                             </tbody>
                         </table>
                     </div>
-                    @if($evaluatedInterns->hasPages())
-                        <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
-                            <a
-                                href="{{ $evaluatedInterns->previousPageUrl() ?? '#' }}"
-                                class="btn btn-sm btn-outline-secondary {{ $evaluatedInterns->onFirstPage() ? 'disabled' : '' }}"
-                                @if($evaluatedInterns->onFirstPage()) aria-disabled="true" @endif
-                            >
-                                Precedent
-                            </a>
-                            <span class="text-muted small">
-                                Page {{ $evaluatedInterns->currentPage() }} / {{ $evaluatedInterns->lastPage() }}
-                            </span>
-                            <a
-                                href="{{ $evaluatedInterns->nextPageUrl() ?? '#' }}"
-                                class="btn btn-sm btn-outline-secondary {{ $evaluatedInterns->hasMorePages() ? '' : 'disabled' }}"
-                                @if(! $evaluatedInterns->hasMorePages()) aria-disabled="true" @endif
-                            >
-                                Suivant
-                            </a>
+                    @if($hasMoreInterns && $internsListUrl)
+                        <div class="text-center mt-3">
+                            <a href="{{ $internsListUrl }}" class="btn btn-sm btn-outline-secondary">Voir plus <i class="bi bi-arrow-right"></i></a>
                         </div>
                     @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-5 fade-in">
-            <div class="card card-soft h-100">
-                <div class="card-body">
-                    <h2 class="h5 mb-3 section-title"><span class="module-icon"><i class="bi bi-exclamation-triangle"></i></span> Alertes intelligentes</h2>
-                    @forelse($smartAlerts as $item)
-                        <div class="alert alert-warning alert-dismissible fade show py-2 pe-5 mb-2" role="alert">
-                            <div class="fw-semibold">{{ $item['intern']->user?->full_name ?? 'Stagiaire non lie' }}</div>
-                            <div>{{ $item['alert']['message'] }}</div>
-                            @if($canViewTasks && isset($item['alert']['task']))
-                                <small class="text-muted">Tâche : {{ $item['alert']['task']->title }}</small>
-                            @endif
-                            <button type="button" class="btn-close py-3" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                        </div>
-                    @empty
-                        <p class="text-muted mb-0">Aucune alerte détectée pour le moment.</p>
-                    @endforelse
                 </div>
             </div>
         </div>
     </div>
 @endif
 
-<div class="row g-4">
+{{-- ── Recent activity ─────────────────────────────────────────────────── --}}
+<div class="row g-3">
     @if($canViewTasks)
         <div class="col-lg-6 fade-in">
             <div class="card card-soft h-100">
                 <div class="card-body">
-                    <h2 class="h5 mb-3 section-title"><span class="module-icon"><i class="bi bi-list-check"></i></span> Dernières tâches</h2>
+                    <x-ui.section-title icon="bi-clock-history">Tâches récentes</x-ui.section-title>
                     <div class="d-grid gap-2">
                         @forelse($latestTasks as $task)
-                            <div class="border-bottom pb-2">
-                                <div class="d-flex justify-content-between align-items-start gap-3">
-                                    <div class="min-w-0">
-                                        <div class="fw-semibold text-break">{{ $task->title }}</div>
-                                        <small class="text-muted">Assignée à : {{ $task->assignedTo?->full_name ?? '-' }}</small>
-                                    </div>
-                                    <span class="flex-shrink-0">@statusBadge($task->status)</span>
+                            <div class="d-flex justify-content-between align-items-start gap-3 pb-2 border-bottom">
+                                <div class="min-w-0">
+                                    <div class="fw-semibold text-break">{{ $task->title }}</div>
+                                    <small class="text-muted">{{ $task->assignedTo?->full_name ?? '-' }}</small>
                                 </div>
+                                <span class="flex-shrink-0">@statusBadge($task->status)</span>
                             </div>
                         @empty
-                            <p class="text-muted mb-0">Aucune tâche pour le moment.</p>
+                            <p class="text-muted small mb-0">Aucune tâche récente.</p>
                         @endforelse
                     </div>
                 </div>
@@ -179,20 +150,18 @@
     <div class="col-lg-6 fade-in">
         <div class="card card-soft h-100">
             <div class="card-body">
-                <h2 class="h5 mb-3 section-title"><span class="module-icon"><i class="bi bi-file-earmark-text"></i></span> Dernières demandes</h2>
+                <x-ui.section-title icon="bi-inbox">Demandes récentes</x-ui.section-title>
                 <div class="d-grid gap-2">
                     @forelse($latestRequests as $requestItem)
-                        <div class="border-bottom pb-2">
-                            <div class="d-flex justify-content-between align-items-start gap-3">
-                                <div class="min-w-0">
-                                    <div class="fw-semibold text-break">{{ $requestItem->intern->user?->full_name ?? 'Non lié' }}</div>
-                                    <small class="text-muted">Type : {{ $requestItem->type }}</small>
-                                </div>
-                                <span class="flex-shrink-0">@statusBadge($requestItem->status)</span>
+                        <div class="d-flex justify-content-between align-items-start gap-3 pb-2 border-bottom">
+                            <div class="min-w-0">
+                                <div class="fw-semibold text-break">{{ $requestItem->intern->user?->full_name ?? 'Non lié' }}</div>
+                                <small class="text-muted">{{ $requestItem->workflow_status ? \App\Support\AttestationWorkflow::shortLabel($requestItem->workflow_status) : ucfirst($requestItem->type) }}</small>
                             </div>
+                            <span class="flex-shrink-0">@statusBadge($requestItem->status)</span>
                         </div>
                     @empty
-                        <p class="text-muted mb-0">Aucune demande récente.</p>
+                        <p class="text-muted small mb-0">Aucune demande récente.</p>
                     @endforelse
                 </div>
             </div>

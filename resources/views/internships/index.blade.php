@@ -5,26 +5,23 @@
 @section('content')
 @php $isHr = auth()->user()->hasRole('Responsable RH'); @endphp
 
+<x-ui.page-header title="Gestion des stages" kicker="Stages" kicker-icon="bi-briefcase-fill">
+    <x-slot:actions>
+        <a href="{{ route('internships.create') }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> Nouveau stage</a>
+    </x-slot:actions>
+</x-ui.page-header>
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="h4 mb-0">Gestion des stages</h1>
-            <a href="{{ route('internships.create') }}" class="btn btn-success btn-sm">Nouveau stage</a>
-        </div>
 
-        <form method="GET" class="row g-2 mb-3">
-            <div class="col-md-4">
-                <select class="form-select" name="status">
-                    <option value="">Tous les statuts</option>
-                    <option value="planifie" @selected($status === 'planifie')>Planifié</option>
-                    <option value="en_cours" @selected($status === 'en_cours')>En cours</option>
-                    <option value="termine" @selected($status === 'termine')>Terminé</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" type="submit">Filtrer</button>
-            </div>
-        </form>
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (titre, département)">
+            <select name="status" class="toolbar-select" data-autosubmit aria-label="Filtrer par statut">
+                <option value="">Tous les statuts</option>
+                <option value="planifie" @selected($status === 'planifie')>Planifié</option>
+                <option value="en_cours" @selected($status === 'en_cours')>En cours</option>
+                <option value="termine" @selected($status === 'termine')>Terminé</option>
+            </select>
+        </x-ui.table-toolbar>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -66,7 +63,7 @@
                                     <a href="{{ route('internships.edit', $internship) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
                                     <a href="{{ route('internships.convention', $internship) }}" class="btn btn-sm btn-outline-info text-nowrap">Convention</a>
                                     @unless($isHr)
-                                        <form action="{{ route('internships.destroy', $internship) }}" method="POST" class="m-0" onsubmit="return confirm('Supprimer ce stage ?')">
+                                        <form action="{{ route('internships.destroy', $internship) }}" method="POST" class="m-0" data-confirm="Ce stage sera définitivement supprimé." data-confirm-title="Supprimer le stage ?" data-confirm-ok="Supprimer">
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn btn-sm btn-outline-danger text-nowrap" type="submit">Supprimer</button>
@@ -101,7 +98,7 @@
                     status: $select.val()
                 }
             }).fail(function () {
-                alert('Erreur lors de la mise à jour du statut.');
+                toast('Erreur lors de la mise à jour du statut.', 'error');
             });
         });
     });

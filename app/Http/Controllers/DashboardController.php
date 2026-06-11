@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DailyLog;
 use App\Models\Intern;
 use App\Models\Internship;
 use App\Models\InternshipRequest;
 use App\Models\Message;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\AttestationWorkflow;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
@@ -203,19 +206,12 @@ class DashboardController extends Controller
             ->sortByDesc(fn (Intern $intern): int => $intern->performanceScore()['score'] ?? -1)
             ->values();
 
-        $scoresPage = max(1, (int) request()->query('scores_page', 1));
-
-        $evaluatedInterns = new LengthAwarePaginator(
-            $sortedInternsByScore->forPage($scoresPage, self::RECENT_LIMIT)->values(),
-            $sortedInternsByScore->count(),
-            self::RECENT_LIMIT,
-            $scoresPage,
-            [
-                'path' => request()->url(),
-                'pageName' => 'scores_page',
-                'query' => request()->except('scores_page'),
-            ]
-        );
+        // Dashboard blocks stay synthetic: show the top few, link out for the rest.
+        $evaluatedInterns = $sortedInternsByScore->take(5)->values();
+        $hasMoreInterns = $sortedInternsByScore->count() > $evaluatedInterns->count();
+        $internsListUrl = $user->hasRole('Encadrant')
+            ? route('supervisor.interns')
+            : ($user->hasRole('Administrateur', 'Responsable RH', 'Responsable de competence') ? route('interns.index') : null);
 
         $smartAlerts = $alertEvaluatedInterns
             ->flatMap(fn (Intern $intern) => collect($intern->smartAlerts())
@@ -227,7 +223,250 @@ class DashboardController extends Controller
             ->take(self::RECENT_LIMIT)
             ->values();
 
-        return view('dashboard.index', compact('stats', 'statCards', 'latestTasks', 'latestRequests', 'evaluatedInterns', 'smartAlerts', 'canViewTasks'));
+        // ── Action panels: "what needs attention now", per role ──────────
+        $attention = $this->buildAttentionPanels($user, $managedInternIds, $isAdmin, $isHr, $isManager, $isIntern, $smartAlerts);
+        $roleName = $user->role?->name ?? 'Utilisateur';
+
+        return view('dashboard.index', compact('stats', 'statCards', 'latestTasks', 'latestRequests', 'evaluatedInterns', 'hasMoreInterns', 'internsListUrl', 'smartAlerts', 'canViewTasks', 'attention', 'roleName'));
+    }
+
+    /**
+     * Build the role-specific "needs attention now" panels.
+     *
+     * Each panel: ['title','icon','tone','count','viewUrl','viewLabel','empty','items'].
+     * Each item:  ['title','meta','badge'=>['label','class']|null,'url'].
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildAttentionPanels(
+        User $user,
+        $managedInternIds,
+        bool $isAdmin,
+        bool $isHr,
+        bool $isManager,
+        bool $isIntern,
+        $smartAlerts
+    ): array {
+        $today = today();
+        $panels = [];
+
+        // Helper: map attestation requests to panel items.
+        $reqItems = fn (EloquentCollection $requests, string $url) => $requests
+            ->map(fn (InternshipRequest $r) => [
+                'title' => $r->intern->user?->full_name ?? $r->intern->cin ?? 'Stagiaire',
+                'meta'  => AttestationWorkflow::label($r->workflow_status),
+                'badge' => null,
+                'url'   => $url,
+            ])->all();
+
+        // Helper: map tasks to panel items.
+        $taskItems = fn (EloquentCollection $tasks) => $tasks
+            ->map(fn (Task $t) => [
+                'title' => $t->title,
+                'meta'  => 'Échéance ' . ($t->due_date?->format('d/m/Y') ?? '—')
+                    . ($t->assignedTo ? ' · ' . $t->assignedTo->full_name : ''),
+                'badge' => ['label' => 'En retard', 'class' => 'text-bg-danger'],
+                'url'   => route('tasks.index'),
+            ])->all();
+
+        $attestation = fn () => InternshipRequest::query()->with('intern.user')->where('type', 'attestation');
+
+        if ($isIntern) {
+            // A stagiaire only ever sees their own panels — never the team-wide queues.
+            if ($user->intern === null) {
+                return $panels;
+            }
+
+            $internId = $user->intern->id;
+
+            $overdue = Task::query()->with('assignedTo')
+                ->where('assigned_to', $user->id)
+                ->where('status', '!=', 'termine')
+                ->whereNotNull('due_date')->whereDate('due_date', '<', $today)
+                ->orderBy('due_date')->limit(5)->get();
+
+            $panels[] = [
+                'title' => 'Tâches en retard',
+                'icon' => 'bi-exclamation-circle',
+                'tone' => 'danger',
+                'count' => $overdue->count(),
+                'viewUrl' => route('tasks.index'),
+                'viewLabel' => 'Voir mes tâches',
+                'empty' => 'Aucune tâche en retard. Continuez comme ça !',
+                'items' => $taskItems($overdue),
+            ];
+
+            $myRequests = InternshipRequest::query()
+                ->where('intern_id', $internId)
+                ->where(function (Builder $q): void {
+                    $q->where('status', 'en_attente')
+                        ->orWhere(fn (Builder $s) => $s->where('type', 'attestation')
+                            ->whereNotNull('workflow_status')
+                            ->where('workflow_status', '!=', 'attestation_archivee'));
+                })
+                ->latest()->limit(5)->get();
+
+            $panels[] = [
+                'title' => 'Suivi de mes demandes',
+                'icon' => 'bi-file-earmark-text',
+                'tone' => 'default',
+                'count' => $myRequests->count(),
+                'viewUrl' => route('requests.index'),
+                'viewLabel' => 'Voir mes demandes',
+                'empty' => 'Aucune demande en cours.',
+                'items' => $myRequests->map(fn (InternshipRequest $r) => [
+                    'title' => $r->type === 'attestation' ? 'Attestation de stage'
+                        : ($r->type === 'retard_attestation' ? 'Retard attestation' : ucfirst($r->type)),
+                    'meta'  => $r->workflow_status
+                        ? AttestationWorkflow::label($r->workflow_status)
+                        : \App\Support\StatusDesign::badge($r->status)['label'],
+                    'badge' => null,
+                    'url'   => route('requests.index'),
+                ])->all(),
+            ];
+
+            // Journal reminder (weekdays only).
+            $loggedToday = DailyLog::query()->where('intern_id', $internId)->whereDate('log_date', $today)->exists();
+            if (! $loggedToday && $today->isWeekday()) {
+                $panels[] = [
+                    'title' => 'Journal du jour',
+                    'icon' => 'bi-journal-plus',
+                    'tone' => 'accent',
+                    'count' => null,
+                    'viewUrl' => route('daily-log.index'),
+                    'viewLabel' => "Remplir mon journal d'aujourd'hui",
+                    'empty' => "Vous n'avez pas encore renseigné votre présence et vos activités du jour.",
+                    'items' => [],
+                ];
+            }
+
+            return $panels;
+        }
+
+        if ($isHr) {
+            $toGenerate = $attestation()->where('workflow_status', 'transmise_rh')->latest()->limit(6)->get();
+            $panels[] = [
+                'title' => 'Attestations à générer',
+                'icon' => 'bi-award',
+                'tone' => 'danger',
+                'count' => $toGenerate->count(),
+                'viewUrl' => route('rh.attestations.index'),
+                'viewLabel' => 'Ouvrir la file RH',
+                'empty' => 'Aucune attestation en attente de génération.',
+                'items' => $reqItems($toGenerate, route('rh.attestations.index')),
+            ];
+
+            $toHandOver = $attestation()
+                ->whereIn('workflow_status', ['attestation_generee', 'attestation_prete', 'attestation_imprimee'])
+                ->latest()->limit(6)->get();
+            $panels[] = [
+                'title' => 'À imprimer / remettre',
+                'icon' => 'bi-printer',
+                'tone' => 'default',
+                'count' => $toHandOver->count(),
+                'viewUrl' => route('rh.attestations.index'),
+                'viewLabel' => 'Ouvrir la file RH',
+                'empty' => 'Rien à imprimer ou remettre pour le moment.',
+                'items' => $reqItems($toHandOver, route('rh.attestations.index')),
+            ];
+
+            return $panels;
+        }
+
+        // Encadrant / Responsable de compétence / Administrateur.
+        $scopeIds = $isManager ? $managedInternIds : null;
+
+        if ($user->hasRole('Encadrant')) {
+            $toValidate = $attestation()->where('workflow_status', 'attente_validation_encadrant')
+                ->whereHas('intern.internships', fn ($q) => $q->where('supervisor_id', $user->id))
+                ->latest()->limit(6)->get();
+            $panels[] = [
+                'title' => 'Attestations à valider',
+                'icon' => 'bi-patch-check',
+                'tone' => 'danger',
+                'count' => $toValidate->count(),
+                'viewUrl' => route('requests.index'),
+                'viewLabel' => 'Ouvrir les demandes',
+                'empty' => 'Aucun rapport en attente de votre validation.',
+                'items' => $reqItems($toValidate, route('requests.index')),
+            ];
+        }
+
+        if ($user->hasRole('Responsable de competence')) {
+            $toValidate = $attestation()->where('workflow_status', 'attente_validation_rc')
+                ->whereHas('intern.internships', fn ($q) => $q->where('responsible_id', $user->id))
+                ->latest()->limit(6)->get();
+            $panels[] = [
+                'title' => 'Rapports à valider (RC)',
+                'icon' => 'bi-patch-check',
+                'tone' => 'danger',
+                'count' => $toValidate->count(),
+                'viewUrl' => route('requests.index'),
+                'viewLabel' => 'Ouvrir les demandes',
+                'empty' => 'Aucun rapport en attente de votre validation.',
+                'items' => $reqItems($toValidate, route('requests.index')),
+            ];
+        }
+
+        if ($isAdmin) {
+            $toProcess = $attestation()->where('workflow_status', 'transmise_rh')->latest()->limit(6)->get();
+            $panels[] = [
+                'title' => 'Attestations à traiter',
+                'icon' => 'bi-award',
+                'tone' => 'default',
+                'count' => $toProcess->count(),
+                'viewUrl' => route('rh.attestations.index'),
+                'viewLabel' => 'Ouvrir la file RH',
+                'empty' => 'Aucune attestation à traiter.',
+                'items' => $reqItems($toProcess, route('rh.attestations.index')),
+            ];
+        }
+
+        // Overdue tasks for managed/all interns.
+        $overdue = Task::query()->with('assignedTo')
+            ->where('status', '!=', 'termine')
+            ->whereNotNull('due_date')->whereDate('due_date', '<', $today)
+            ->when($isManager, function (Builder $q) use ($managedInternIds, $user): void {
+                if ($managedInternIds->isEmpty()) {
+                    $q->whereRaw('1 = 0');
+                } else {
+                    $q->whereHas('internship.interns', fn ($s) => $s->whereIn('interns.id', $managedInternIds))
+                        ->whereHas('internship', fn ($s) => $this->scopeManagedInternships($s, $user));
+                }
+            })
+            ->orderBy('due_date')->limit(6)->get();
+        $panels[] = [
+            'title' => 'Tâches en retard',
+            'icon' => 'bi-exclamation-circle',
+            'tone' => 'default',
+            'count' => $overdue->count(),
+            'viewUrl' => route('tasks.index'),
+            'viewLabel' => 'Voir les tâches',
+            'empty' => 'Aucune tâche en retard.',
+            'items' => $taskItems($overdue),
+        ];
+
+        // Interns needing follow-up (reuse smart alerts).
+        $followUp = collect($smartAlerts)->take(5)->map(fn ($item) => [
+            'title' => $item['intern']->user?->full_name ?? 'Stagiaire',
+            'meta'  => $item['alert']['message'],
+            'badge' => null,
+            'url'   => $isManager && $user->hasRole('Encadrant')
+                ? route('supervisor.interns.show', $item['intern'])
+                : route('interns.index'),
+        ])->all();
+        $panels[] = [
+            'title' => 'Stagiaires à suivre',
+            'icon' => 'bi-person-exclamation',
+            'tone' => 'default',
+            'count' => count($followUp),
+            'viewUrl' => $user->hasRole('Encadrant') ? route('supervisor.interns') : route('interns.index'),
+            'viewLabel' => 'Voir les stagiaires',
+            'empty' => 'Aucun stagiaire à risque détecté.',
+            'items' => $followUp,
+        ];
+
+        return $panels;
     }
 
     private function scopeManagedInternships($query, User $user): void

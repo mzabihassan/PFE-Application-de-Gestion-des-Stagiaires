@@ -3,16 +3,20 @@
 @section('title', 'Archives RH')
 
 @section('content')
+<x-ui.page-header title="Archives des attestations" kicker="Archives" kicker-icon="bi-archive-fill"
+                  subtitle="Attestations clôturées et archivées." />
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <h1 class="h4 mb-3">Archives des attestations</h1>
+        {{-- ── Recherche ────────────────────────────────────────────── --}}
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (stagiaire, CIN)" />
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
                         <th>Stagiaire</th>
-                        <th>Date generation</th>
+                        <th>Date génération</th>
                         <th>Traitée par</th>
                         <th class="text-end">Action</th>
                     </tr>

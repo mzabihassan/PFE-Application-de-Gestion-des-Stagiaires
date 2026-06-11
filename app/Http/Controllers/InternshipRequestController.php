@@ -19,6 +19,10 @@ class InternshipRequestController extends Controller
     {
         $user = $request->user();
 
+        $type = $request->query('type');
+        $statusFilter = $request->query('status'); // 'pending' | 'done'
+        $search = trim((string) $request->query('search', ''));
+
         $requests = InternshipRequest::query()
             ->with(['intern.user', 'intern.internships', 'processedBy', 'supervisorValidator', 'rcValidator', 'rhProcessor'])
             ->when($user->hasRole('Stagiaire') && $user->intern !== null, fn ($query) => $query->where('intern_id', $user->intern->id))
@@ -26,11 +30,21 @@ class InternshipRequestController extends Controller
             ->when($user->hasRole('Encadrant'), function ($query) use ($user) {
                 $query->whereHas('intern.internships', fn ($internshipQuery) => $internshipQuery->where('supervisor_id', $user->id));
             })
+            ->when(in_array($type, ['attestation', 'absence', 'prolongation', 'retard_attestation', 'autre'], true),
+                fn ($query) => $query->where('type', $type))
+            ->when($statusFilter === 'pending', fn ($query) => $query->where('status', 'en_attente'))
+            ->when($statusFilter === 'done', fn ($query) => $query->where('status', '!=', 'en_attente'))
+            ->when($search !== '', fn ($query) => $query->where(function ($sub) use ($search) {
+                $sub->where('message', 'like', "%{$search}%")
+                    ->orWhereHas('intern.user', fn ($u) => $u->where('full_name', 'like', "%{$search}%"))
+                    ->orWhereHas('intern', fn ($i) => $i->where('cin', 'like', "%{$search}%"));
+            }))
             ->orderByRaw("CASE WHEN status = 'en_attente' THEN 0 ELSE 1 END")
             ->latest()
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
 
-        return view('requests.index', compact('requests'));
+        return view('requests.index', compact('requests', 'type', 'statusFilter', 'search'));
     }
 
     public function create(Request $request): View

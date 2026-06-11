@@ -9,7 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE requests MODIFY type ENUM('prolongation', 'attestation', 'absence', 'autre') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE requests MODIFY type ENUM('prolongation', 'attestation', 'absence', 'autre') NOT NULL");
+        }
 
         if (! Schema::hasColumn('requests', 'motif_absence')) {
             Schema::table('requests', function (Blueprint $table) {
@@ -42,6 +44,8 @@ return new class extends Migration
             });
         }
 
-        DB::statement("ALTER TABLE requests MODIFY type ENUM('prolongation', 'attestation', 'autre') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE requests MODIFY type ENUM('prolongation', 'attestation', 'autre') NOT NULL");
+        }
     }
 };

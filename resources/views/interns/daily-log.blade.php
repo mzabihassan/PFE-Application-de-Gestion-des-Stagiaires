@@ -27,11 +27,10 @@
 @endphp
 
 {{-- ── Page header ───────────────────────────────────────────── --}}
-<div class="d-flex align-items-center justify-content-between gap-3 mb-4 flex-wrap">
+<div class="d-flex align-items-center justify-content-between gap-3 mb-4 flex-wrap fade-in">
     <div>
-        <h1 class="h4 mb-0 d-flex align-items-center gap-2">
-            📓 Mon Journal de Stage
-        </h1>
+        <div class="page-kicker"><i class="bi bi-journal-text"></i> Journal de stage</div>
+        <h1 class="h3 mb-0">Mon journal</h1>
         <p class="text-muted small mb-0 mt-1">
             Documentez votre présence et vos activités quotidiennes.
             Ces données alimentent le rapport hebdomadaire IA de votre encadrant.
@@ -41,7 +40,7 @@
     {{-- Week navigation --}}
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('daily-log.index', ['week' => $prevWeek]) }}"
-           class="btn btn-outline-secondary btn-sm px-3" title="Semaine précédente">←</a>
+           class="btn btn-outline-secondary btn-sm" title="Semaine précédente"><i class="bi bi-chevron-left"></i></a>
 
         <span class="fw-semibold px-2 text-nowrap">
             {{ $weekStart->isoFormat('D MMM') }} – {{ $weekStart->copy()->addDays(4)->isoFormat('D MMM YYYY') }}
@@ -49,9 +48,9 @@
         </span>
 
         <a href="{{ route('daily-log.index', ['week' => $nextWeek]) }}"
-           class="btn btn-outline-secondary btn-sm px-3"
+           class="btn btn-outline-secondary btn-sm"
            @if($isCurrentWk) style="pointer-events:none;opacity:.4" @endif
-           title="Semaine suivante">→</a>
+           title="Semaine suivante"><i class="bi bi-chevron-right"></i></a>
     </div>
 </div>
 
@@ -393,7 +392,7 @@ $(function () {
                 ? 'Vous n\'êtes pas autorisé à modifier cette tâche.'
                 : 'Erreur lors de la mise à jour du statut.';
 
-            alert(message);
+            toast(message, 'error');
         });
     });
 
@@ -422,7 +421,7 @@ $(function () {
                 const msg = xhr.status === 403
                     ? 'Non autorisé.'
                     : 'Erreur de sauvegarde.';
-                alert(msg);
+                toast(msg, 'error');
             });
         }, 900);
     });

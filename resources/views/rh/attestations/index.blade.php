@@ -3,20 +3,19 @@
 @section('title', 'Attestations')
 
 @section('content')
+<x-ui.page-header title="Attestations" kicker="File RH" kicker-icon="bi-award-fill"
+                  subtitle="Les attestations à générer apparaissent en premier." />
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <h1 class="h4 mb-3">Attestations</h1>
-
-        <div class="d-flex flex-wrap gap-2 mb-3">
-            <a href="{{ route('rh.attestations.index') }}" class="btn btn-sm {{ $status === '' ? 'btn-primary' : 'btn-outline-primary' }}">
-                Toutes
-            </a>
-            @foreach($statusFilters as $key => $filter)
-                <a href="{{ route('rh.attestations.index', ['status' => $key]) }}" class="btn btn-sm {{ $status === $key ? 'btn-primary' : 'btn-outline-primary' }}">
-                    {{ $filter['label'] }}
-                </a>
-            @endforeach
-        </div>
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (stagiaire, CIN)">
+            <select name="status" class="toolbar-select" data-autosubmit aria-label="Filtrer par étape">
+                <option value="">Toutes les étapes</option>
+                @foreach($statusFilters as $key => $filter)
+                    <option value="{{ $key }}" @selected($status === $key)>{{ $filter['label'] }}</option>
+                @endforeach
+            </select>
+        </x-ui.table-toolbar>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -87,7 +86,7 @@
                                                 @if(in_array($requestItem->workflow_status, ['attestation_generee', 'attestation_prete', 'attestation_imprimee', 'attestation_recuperee'], true))
                                                     <li><hr class="dropdown-divider"></li>
                                                     <li>
-                                                        <form action="{{ route('requests.rh-archive', $requestItem) }}" method="POST" class="m-0" onsubmit="return confirm('Archiver cette attestation ?')">
+                                                        <form action="{{ route('requests.rh-archive', $requestItem) }}" method="POST" class="m-0" data-confirm="L'attestation sera déplacée vers les archives." data-confirm-title="Archiver l'attestation ?" data-confirm-ok="Archiver" data-confirm-variant="neutral">
                                                             @csrf
                                                             @method('PATCH')
                                                             <button class="dropdown-item text-warning" type="submit">Archiver</button>

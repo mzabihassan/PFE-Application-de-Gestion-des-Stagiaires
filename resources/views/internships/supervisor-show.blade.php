@@ -19,7 +19,7 @@
         <p class="text-muted mb-0">Informations generales du stage.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <form action="{{ route('supervisor.internships.validate', $internship) }}" method="POST" class="d-flex flex-wrap gap-2" onsubmit="return confirm('Enregistrer la note ?')">
+        <form action="{{ route('supervisor.internships.validate', $internship) }}" method="POST" class="d-flex flex-wrap gap-2" data-confirm="Confirmez l'enregistrement de la note." data-confirm-title="Enregistrer la note ?" data-confirm-ok="Enregistrer" data-confirm-variant="neutral">
             @csrf
             @method('PATCH')
             <div>
@@ -33,7 +33,7 @@
             @endif
         </form>
         @if($internship->status === 'termine')
-            <form action="{{ route('supervisor.internships.undo', $internship) }}" method="POST" onsubmit="return confirm('Annuler la validation de fin de stage ?')">
+            <form action="{{ route('supervisor.internships.undo', $internship) }}" method="POST" data-confirm="La validation de fin de stage sera annulée." data-confirm-title="Annuler la validation ?" data-confirm-ok="Confirmer">
                 @csrf
                 @method('PATCH')
                 <button class="btn btn-outline-danger btn-sm" type="submit">Annuler validation</button>
@@ -198,7 +198,7 @@
                     ? 'Vous n\'êtes pas autorisé à modifier cette tâche.'
                     : 'Erreur lors de la mise à jour du statut.';
 
-                alert(message);
+                toast(message, 'error');
             });
         });
     });

@@ -37,29 +37,43 @@ class RhDocumentController extends Controller
             'archivee' => ['label' => 'Archivée', 'statuses' => ['attestation_archivee']],
         ];
         $allWorkflowStatuses = collect($statusFilters)->flatMap(fn (array $filter) => $filter['statuses'])->all();
+        $search = trim((string) $request->query('search', ''));
 
         $attestations = InternshipRequest::query()
             ->with(['intern.user', 'intern.internships.supervisor', 'intern.internships.responsible', 'processedBy', 'supervisorValidator', 'rcValidator', 'rhProcessor'])
             ->where('type', 'attestation')
             ->whereIn('workflow_status', $statusFilters[$status]['statuses'] ?? $allWorkflowStatuses)
+            ->when($search !== '', fn ($query) => $query->where(function ($sub) use ($search) {
+                $sub->whereHas('intern.user', fn ($u) => $u->where('full_name', 'like', "%{$search}%"))
+                    ->orWhereHas('intern', fn ($i) => $i->where('cin', 'like', "%{$search}%"));
+            }))
             ->orderByRaw("CASE WHEN workflow_status = 'transmise_rh' THEN 0 ELSE 1 END")
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
-        return view('rh.attestations.index', compact('attestations', 'status', 'statusFilters'));
+        return view('rh.attestations.index', compact('attestations', 'status', 'statusFilters', 'search'));
     }
 
-    public function archives(): View
+    public function archives(Request $request): View
     {
+        $search = trim((string) $request->query('search', ''));
+
         $attestations = InternshipRequest::query()
             ->with(['intern.user', 'rhProcessor'])
             ->where('type', 'attestation')
             ->where('workflow_status', 'attestation_archivee')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($inner) use ($search): void {
+                    $inner->whereHas('intern.user', fn ($u) => $u->where('full_name', 'like', "%{$search}%"))
+                        ->orWhereHas('intern', fn ($i) => $i->where('cin', 'like', "%{$search}%"));
+                });
+            })
             ->latest('rh_processed_at')
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
 
-        return view('rh.archives.index', compact('attestations'));
+        return view('rh.archives.index', compact('attestations', 'search'));
     }
 
     public function downloadAttestation(InternshipRequest $requestItem): Response

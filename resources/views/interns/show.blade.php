@@ -8,10 +8,10 @@
     $isSupervisor = auth()->user()->hasRole('Encadrant');
     $isRh = auth()->user()->hasRole('Responsable RH');
     $scoreColor = match ($score['badge']) {
-        'success' => '#078f79',
-        'warning' => '#f4b000',
-        'danger' => '#f04a22',
-        default => '#9ca3af',
+        'success' => '#1B9E6A',
+        'warning' => '#DE920B',
+        'danger' => '#D2453B',
+        default => '#9AA29B',
     };
     $hasScoreData = $score['has_data'] ?? false;
     $supervisors = $intern->internships
@@ -43,23 +43,20 @@
     ])->where('show', true);
 @endphp
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 fade-in">
-    <div>
-        <h1 class="h3 mb-1">{{ $intern->user?->full_name ?? 'Stagiaire non lie' }}</h1>
-        <p class="text-muted mb-0">{{ $intern->school }} - {{ $intern->specialty }}</p>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ $isSupervisor ? route('supervisor.interns') : route('interns.index') }}" class="btn btn-outline-secondary btn-sm">Retour</a>
+<x-ui.page-header :title="$intern->user?->full_name ?? 'Stagiaire non lié'" kicker="Fiche stagiaire" kicker-icon="bi-person-vcard"
+                  :subtitle="$intern->school . ' · ' . $intern->specialty">
+    <x-slot:actions>
+        <a href="{{ $isSupervisor ? route('supervisor.interns') : route('interns.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>
         @if($isSupervisor || auth()->user()->hasRole('Administrateur'))
-            <a href="{{ route('ai.weekly-summary', $intern) }}" class="btn btn-sm btn-primary d-flex align-items-center gap-1">
-                🤖 Résumé IA
+            <a href="{{ route('ai.weekly-summary', $intern) }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-stars"></i> Résumé IA
             </a>
         @endif
         @unless($isSupervisor || $isRh)
-            <a href="{{ route('interns.edit', $intern) }}" class="btn btn-outline-primary btn-sm">Modifier</a>
+            <a href="{{ route('interns.edit', $intern) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> Modifier</a>
         @endunless
-    </div>
-</div>
+    </x-slot:actions>
+</x-ui.page-header>
 
 <div class="row g-4 mb-4 align-items-start">
     <div class="col-xl-7 col-lg-6 fade-in">
@@ -68,7 +65,7 @@
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                     <div>
                         <h2 class="h5 mb-1 section-title"><span class="module-icon"><i class="bi bi-speedometer2"></i></span> Score automatique</h2>
-                        <p class="text-muted mb-0">
+                        <p class="text-muted mb-0 mt-2">
                             @if($hasScoreData)
                                 Moyenne calculée à partir de {{ $score['report_count'] }} rapport(s) IA.
                             @else
@@ -111,14 +108,13 @@
                             </div>
                         </div>
                         @else
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-robot fs-3 d-block mb-2"></i>
-                            <small>Demandez à l'encadrant de générer un résumé IA pour calculer le score.</small>
+                        <div class="empty-state">
+                            <span class="empty-state-icon"><i class="bi bi-robot"></i></span>
+                            <div class="small">Demandez à l'encadrant de générer un résumé IA pour calculer le score.</div>
                         </div>
                         @endif
                     </div>
                 </div>
-
 
                 <div>
                     <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
@@ -139,8 +135,6 @@
                         @endforeach
                     </div>
                 </div>
-
-
             </div>
         </div>
     </div>
@@ -151,24 +145,24 @@
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                     <div>
                         <h2 class="h5 mb-1 section-title"><span class="module-icon"><i class="bi bi-exclamation-triangle"></i></span> Alertes intelligentes</h2>
-                        <p class="text-muted mb-0">Risques detectes sur les taches et absences.</p>
+                        <p class="text-muted mb-0 mt-2">Risques détectés sur les tâches et absences.</p>
                     </div>
                     <span class="badge text-bg-secondary">{{ count($alerts) }}</span>
                 </div>
                 @forelse($alerts as $alert)
-                    <div class="alert alert-warning alert-dismissible fade show py-2 pe-5 mb-2" role="alert">
+                    <div class="alert alert-warning alert-dismissible" role="alert">
                         <div>{{ $alert['message'] }}</div>
                         @isset($alert['task'])
                             <small class="text-muted">Tâche : {{ $alert['task']->title }}</small>
                         @endisset
-                        <button type="button" class="btn-close py-3" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                     </div>
                 @empty
                     <div class="empty-state">
                         <span class="empty-state-icon"><i class="bi bi-check2-circle"></i></span>
                         <div>
                             <div class="fw-semibold text-body">Aucune alerte</div>
-                            <div class="small">Aucun risque detecte pour ce stagiaire.</div>
+                            <div class="small">Aucun risque détecté pour ce stagiaire.</div>
                         </div>
                     </div>
                 @endforelse
@@ -181,80 +175,60 @@
     <div class="card-body">
         <ul class="nav nav-tabs flex-nowrap overflow-auto mb-4" id="internDetailsTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active text-nowrap" id="infos-tab" data-bs-toggle="tab" data-bs-target="#infos-pane" type="button" role="tab">Informations</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-nowrap" id="stage-tab" data-bs-toggle="tab" data-bs-target="#stage-pane" type="button" role="tab">Stage</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-nowrap" id="team-tab" data-bs-toggle="tab" data-bs-target="#team-pane" type="button" role="tab">Encadrant / RC</button>
+                <button class="nav-link active text-nowrap" id="infos-tab" data-bs-toggle="tab" data-bs-target="#infos-pane" type="button" role="tab">Profil &amp; stage</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link text-nowrap" id="absences-tab" data-bs-toggle="tab" data-bs-target="#absences-pane" type="button" role="tab">Absences</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link text-nowrap" id="ai-reports-tab" data-bs-toggle="tab" data-bs-target="#ai-reports-pane" type="button" role="tab">🤖 Rapports IA</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-nowrap" id="report-tab" data-bs-toggle="tab" data-bs-target="#report-pane" type="button" role="tab">Rapport</button>
+                <button class="nav-link text-nowrap" id="ai-reports-tab" data-bs-toggle="tab" data-bs-target="#ai-reports-pane" type="button" role="tab">Rapports IA</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link text-nowrap" id="attestation-tab" data-bs-toggle="tab" data-bs-target="#attestation-pane" type="button" role="tab">Attestation</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-nowrap" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab">Historique</button>
-            </li>
         </ul>
 
         <div class="tab-content" id="internDetailsTabsContent">
-            <div class="tab-pane fade show active" id="infos-pane" role="tabpanel" aria-labelledby="infos-tab" tabindex="0">
-                <dl class="row mb-0">
-                    <dt class="col-sm-3">Nom</dt>
-                    <dd class="col-sm-9">{{ $intern->user?->full_name ?? '-' }}</dd>
-                    <dt class="col-sm-3">Email</dt>
-                    <dd class="col-sm-9">{{ $intern->user?->email ?? '-' }}</dd>
-                    <dt class="col-sm-3">Téléphone</dt>
-                    <dd class="col-sm-9">{{ $intern->phone ?? '-' }}</dd>
-                    <dt class="col-sm-3">CIN</dt>
-                    <dd class="col-sm-9">{{ $intern->cin }}</dd>
-                    <dt class="col-sm-3">École</dt>
-                    <dd class="col-sm-9">{{ $intern->school }}</dd>
-                    <dt class="col-sm-3">Spécialité</dt>
-                    <dd class="col-sm-9">{{ $intern->specialty }}</dd>
-                    <dt class="col-sm-3">État</dt>
-                    <dd class="col-sm-9">@statusBadge($intern->is_archived ? 'archive' : 'en_cours')</dd>
-                </dl>
+            <div class="tab-pane active" id="infos-pane" role="tabpanel" aria-labelledby="infos-tab" tabindex="0">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <h3 class="h6 text-muted text-uppercase mb-2" style="letter-spacing:.06em;font-size:.72rem">Identité</h3>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Nom</dt>
+                            <dd class="col-sm-8">{{ $intern->user?->full_name ?? '-' }}</dd>
+                            <dt class="col-sm-4">Email</dt>
+                            <dd class="col-sm-8">{{ $intern->user?->email ?? '-' }}</dd>
+                            <dt class="col-sm-4">Téléphone</dt>
+                            <dd class="col-sm-8">{{ $intern->phone ?? '-' }}</dd>
+                            <dt class="col-sm-4">CIN</dt>
+                            <dd class="col-sm-8">{{ $intern->cin }}</dd>
+                            <dt class="col-sm-4">École</dt>
+                            <dd class="col-sm-8">{{ $intern->school }}</dd>
+                            <dt class="col-sm-4">Spécialité</dt>
+                            <dd class="col-sm-8">{{ $intern->specialty }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-lg-6">
+                        <h3 class="h6 text-muted text-uppercase mb-2" style="letter-spacing:.06em;font-size:.72rem">Stage &amp; encadrement</h3>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Sujet</dt>
+                            <dd class="col-sm-8">{{ $latestInternship?->title ?? '-' }}</dd>
+                            <dt class="col-sm-4">Département</dt>
+                            <dd class="col-sm-8">{{ $latestInternship?->department ?? '-' }}</dd>
+                            <dt class="col-sm-4">Période</dt>
+                            <dd class="col-sm-8">{{ $intern->start_date?->format('d/m/Y') ?? '-' }} → {{ $intern->end_date?->format('d/m/Y') ?? '-' }} <span class="text-muted">({{ $duration }})</span></dd>
+                            <dt class="col-sm-4">Statut</dt>
+                            <dd class="col-sm-8">@statusBadge($stageStatus)</dd>
+                            <dt class="col-sm-4">Encadrant</dt>
+                            <dd class="col-sm-8">{{ $supervisors->isNotEmpty() ? $supervisors->join(', ') : '-' }}</dd>
+                            <dt class="col-sm-4">Resp. compétence</dt>
+                            <dd class="col-sm-8">{{ $latestInternship?->responsible?->full_name ?? '-' }}</dd>
+                        </dl>
+                    </div>
+                </div>
             </div>
 
-            <div class="tab-pane fade" id="stage-pane" role="tabpanel" aria-labelledby="stage-tab" tabindex="0">
-                <dl class="row mb-0">
-                    <dt class="col-sm-3">Sujet</dt>
-                    <dd class="col-sm-9">{{ $latestInternship?->title ?? '-' }}</dd>
-                    <dt class="col-sm-3">Département</dt>
-                    <dd class="col-sm-9">{{ $latestInternship?->department ?? '-' }}</dd>
-                    <dt class="col-sm-3">Date début / fin</dt>
-                    <dd class="col-sm-9">{{ $intern->start_date?->format('d/m/Y') ?? '-' }} - {{ $intern->end_date?->format('d/m/Y') ?? '-' }}</dd>
-                    <dt class="col-sm-3">Durée</dt>
-                    <dd class="col-sm-9">{{ $duration }}</dd>
-                    <dt class="col-sm-3">Statut</dt>
-                    <dd class="col-sm-9">@statusBadge($stageStatus)</dd>
-                </dl>
-            </div>
-
-            <div class="tab-pane fade" id="team-pane" role="tabpanel" aria-labelledby="team-tab" tabindex="0">
-                <dl class="row mb-0">
-                    <dt class="col-sm-3">Encadrant</dt>
-                    <dd class="col-sm-9">{{ $supervisors->isNotEmpty() ? $supervisors->join(', ') : '-' }}</dd>
-                    <dt class="col-sm-3">Responsable compétence</dt>
-                    <dd class="col-sm-9">{{ $latestInternship?->responsible?->full_name ?? '-' }}</dd>
-                    <dt class="col-sm-3">Validation encadrant</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->supervisor_validated_at?->format('d/m/Y H:i') ?? '-' }}</dd>
-                    <dt class="col-sm-3">Validation RC</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->rc_validated_at?->format('d/m/Y H:i') ?? '-' }}</dd>
-                </dl>
-            </div>
-
-            <div class="tab-pane fade" id="absences-pane" role="tabpanel" aria-labelledby="absences-tab" tabindex="0">
+            <div class="tab-pane" id="absences-pane" role="tabpanel" aria-labelledby="absences-tab" tabindex="0">
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     <span class="badge text-bg-secondary">Total : {{ $intern->absences->count() }}</span>
                     <span class="badge text-bg-danger">Non justifiées : {{ $intern->absences->where('justified', false)->count() }}</span>
@@ -285,9 +259,9 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="ai-reports-pane" role="tabpanel" aria-labelledby="ai-reports-tab" tabindex="0">
+            <div class="tab-pane" id="ai-reports-pane" role="tabpanel" aria-labelledby="ai-reports-tab" tabindex="0">
                 @if(isset($weeklyReports) && $weeklyReports->count() > 0)
-                    <div class="mb-3">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
                         <span class="badge text-bg-primary">{{ $weeklyReports->count() }} rapport(s)</span>
                         <span class="badge text-bg-info">Score moyen : {{ round($weeklyReports->avg('week_score')) }}/100</span>
                     </div>
@@ -318,19 +292,19 @@
                                     <div class="accordion-body">
                                         <div class="row g-3 mb-3">
                                             <div class="col-sm-4">
-                                                <div class="border rounded p-2 text-center">
+                                                <div class="score-metric text-center">
                                                     <div class="h4 mb-0 fw-bold text-success">{{ $rData['task_completion_rate'] ?? $report->task_completion_rate }}%</div>
                                                     <small class="text-muted">Tâches complétées</small>
                                                 </div>
                                             </div>
                                             <div class="col-sm-4">
-                                                <div class="border rounded p-2 text-center">
+                                                <div class="score-metric text-center">
                                                     <div class="h4 mb-0 fw-bold text-primary">{{ $rData['engagement_score'] ?? $report->engagement_score }}/10</div>
                                                     <small class="text-muted">Engagement</small>
                                                 </div>
                                             </div>
                                             <div class="col-sm-4">
-                                                <div class="border rounded p-2 text-center">
+                                                <div class="score-metric text-center">
                                                     <div class="h4 mb-0">{{ $sentimentIcon }}</div>
                                                     <small class="text-muted">{{ ucfirst($report->overall_sentiment) }}</small>
                                                 </div>
@@ -398,59 +372,58 @@
                 @endif
             </div>
 
-            <div class="tab-pane fade" id="report-pane" role="tabpanel" aria-labelledby="report-tab" tabindex="0">
-                <dl class="row mb-0">
-                    <dt class="col-sm-3">Rapport PDF</dt>
-                    <dd class="col-sm-9">
-                        @if($attestationRequest?->report_path)
-                            <span>{{ $attestationRequest->report_original_name ?? 'rapport-stage.pdf' }}</span>
-                            @unless($isRh)
-                                <a href="{{ route('requests.report', $attestationRequest) }}" class="btn btn-sm btn-outline-primary ms-2">Télécharger</a>
-                            @endunless
-                        @else
-                            -
-                        @endif
-                    </dd>
-                    <dt class="col-sm-3">Validation encadrant</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->supervisor_validated_at ? 'Validé le ' . $attestationRequest->supervisor_validated_at->format('d/m/Y H:i') : 'En attente' }}</dd>
-                    <dt class="col-sm-3">Validation RC</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->rc_validated_at ? 'Validé le ' . $attestationRequest->rc_validated_at->format('d/m/Y H:i') : 'En attente' }}</dd>
-                    <dt class="col-sm-3">Note encadrant</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->supervisor_grade !== null ? $attestationRequest->supervisor_grade . '/20' : '-' }}</dd>
-                </dl>
-            </div>
-
-            <div class="tab-pane fade" id="attestation-pane" role="tabpanel" aria-labelledby="attestation-tab" tabindex="0">
+            <div class="tab-pane" id="attestation-pane" role="tabpanel" aria-labelledby="attestation-tab" tabindex="0">
                 @if($attestationRequest)
-                    @include('partials.attestation-timeline', ['requestItem' => $attestationRequest])
-                @endif
-                <dl class="row mb-0 mt-3">
-                    <dt class="col-sm-3">État actuel</dt>
-                    <dd class="col-sm-9">@statusBadge($attestationRequest?->workflow_status ?? 'en_attente')</dd>
-                    <dt class="col-sm-3">Note encadrant</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->supervisor_grade !== null ? $attestationRequest->supervisor_grade . '/20' : '-' }}</dd>
-                    <dt class="col-sm-3">Date génération</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->rh_processed_at?->format('d/m/Y H:i') ?? '-' }}</dd>
-                    <dt class="col-sm-3">Date récupération</dt>
-                    <dd class="col-sm-9">{{ $attestationRequest?->attestation_recovered_at?->format('d/m/Y H:i') ?? '-' }}</dd>
-                </dl>
-            </div>
-
-            <div class="tab-pane fade" id="history-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-                @if($attestationRequest)
-                    @include('partials.attestation-timeline', ['requestItem' => $attestationRequest])
-                @endif
-
-                <div class="list-group list-group-flush mt-3">
-                    @forelse($historyItems as $item)
-                        <div class="list-group-item px-0 d-flex justify-content-between gap-3">
-                            <span>{{ $item['label'] }}</span>
-                            <span class="text-muted text-nowrap">{{ $item['date']?->format('d/m/Y H:i') }}</span>
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="text-muted small">Étape actuelle</span>
+                            <span class="badge text-bg-primary">{{ \App\Support\AttestationWorkflow::label($attestationRequest->workflow_status) }}</span>
                         </div>
-                    @empty
-                        <div class="text-muted">Aucun historique d attestation pour le moment.</div>
-                    @endforelse
-                </div>
+                        @include('partials.attestation-timeline', ['requestItem' => $attestationRequest])
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <h3 class="h6 text-muted text-uppercase mb-2" style="letter-spacing:.06em;font-size:.72rem">Rapport &amp; validations</h3>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">Rapport PDF</dt>
+                                <dd class="col-sm-7">
+                                    @if($attestationRequest->report_path)
+                                        {{ $attestationRequest->report_original_name ?? 'rapport-stage.pdf' }}
+                                        @unless($isRh)
+                                            <a href="{{ route('requests.report', $attestationRequest) }}" class="btn btn-sm btn-outline-primary ms-1">Télécharger</a>
+                                        @endunless
+                                    @else
+                                        -
+                                    @endif
+                                </dd>
+                                <dt class="col-sm-5">Validation encadrant</dt>
+                                <dd class="col-sm-7">{{ $attestationRequest->supervisor_validated_at ? 'Validé le ' . $attestationRequest->supervisor_validated_at->format('d/m/Y H:i') : 'En attente' }}</dd>
+                                <dt class="col-sm-5">Validation RC</dt>
+                                <dd class="col-sm-7">{{ $attestationRequest->rc_validated_at ? 'Validé le ' . $attestationRequest->rc_validated_at->format('d/m/Y H:i') : 'En attente' }}</dd>
+                                <dt class="col-sm-5">Note encadrant</dt>
+                                <dd class="col-sm-7">{{ $attestationRequest->supervisor_grade !== null ? $attestationRequest->supervisor_grade . '/20' : '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-lg-6">
+                            <h3 class="h6 text-muted text-uppercase mb-2" style="letter-spacing:.06em;font-size:.72rem">Historique</h3>
+                            <div class="list-group list-group-flush">
+                                @forelse($historyItems as $item)
+                                    <div class="list-group-item px-0 d-flex justify-content-between gap-3">
+                                        <span>{{ $item['label'] }}</span>
+                                        <span class="text-muted text-nowrap small">{{ $item['date']?->format('d/m/Y H:i') }}</span>
+                                    </div>
+                                @empty
+                                    <div class="text-muted small">Aucun historique pour le moment.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <x-ui.empty-state icon="bi-award" title="Aucune attestation">
+                        Aucune demande d'attestation n'a encore été envoyée pour ce stagiaire.
+                    </x-ui.empty-state>
+                @endif
             </div>
         </div>
     </div>
@@ -459,7 +432,7 @@
 @if($canViewInternTasks)
     <div class="card card-soft mt-4 fade-in">
         <div class="card-body">
-            <h2 class="h5 mb-3">Tâches du stagiaire</h2>
+            <h2 class="h5 mb-3 section-title"><span class="module-icon"><i class="bi bi-list-check"></i></span> Tâches du stagiaire</h2>
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
                     <thead>
@@ -472,7 +445,7 @@
                     <tbody>
                         @forelse($tasks as $task)
                             <tr>
-                                <td>{{ $task->title }}</td>
+                                <td class="fw-semibold">{{ $task->title }}</td>
                                 <td>{{ $task->due_date?->format('d/m/Y') ?? '-' }}</td>
                                 <td>@statusBadge($task->status)</td>
                             </tr>

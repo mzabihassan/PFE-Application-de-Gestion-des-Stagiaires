@@ -278,7 +278,7 @@ $(function () {
         const weekEnd   = $('#week-end').val();
 
         if (!weekStart || !weekEnd) {
-            alert('Veuillez sélectionner une semaine.');
+            toast('Veuillez sélectionner une semaine.', 'warning');
             return;
         }
 

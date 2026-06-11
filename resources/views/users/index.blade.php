@@ -3,21 +3,28 @@
 @section('title', 'Utilisateurs')
 
 @section('content')
+<x-ui.page-header title="Gestion des utilisateurs" kicker="Comptes" kicker-icon="bi-people-fill">
+    <x-slot:actions>
+        <a href="{{ route('users.create') }}" class="btn btn-success btn-sm"><i class="bi bi-person-plus"></i> Nouvel utilisateur</a>
+    </x-slot:actions>
+</x-ui.page-header>
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="h4 mb-0">Gestion des utilisateurs</h1>
-            <a href="{{ route('users.create') }}" class="btn btn-success btn-sm">Nouvel utilisateur</a>
-        </div>
 
-        <form method="GET" class="row g-2 mb-3">
-            <div class="col-sm-8 col-md-6">
-                <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Rechercher (nom, email, role)">
-            </div>
-            <div class="col-sm-4 col-md-2">
-                <button class="btn btn-outline-secondary w-100" type="submit">Filtrer</button>
-            </div>
-        </form>
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (nom, email)">
+            <select name="role" class="toolbar-select" data-autosubmit aria-label="Filtrer par rôle">
+                <option value="">Tous les rôles</option>
+                @foreach($roles as $role)
+                    <option value="{{ $role->id }}" @selected($roleId === (string) $role->id)>{{ $role->name }}</option>
+                @endforeach
+            </select>
+            <select name="active" class="toolbar-select" data-autosubmit aria-label="Filtrer par état">
+                <option value="">Tous les états</option>
+                <option value="1" @selected($active === '1')>Actifs</option>
+                <option value="0" @selected($active === '0')>Inactifs</option>
+            </select>
+        </x-ui.table-toolbar>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -41,7 +48,7 @@
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
-                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cet utilisateur ?')">
+                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" data-confirm="Cet utilisateur sera définitivement supprimé." data-confirm-title="Supprimer l'utilisateur ?" data-confirm-ok="Supprimer">
                                     @csrf
                                     @method('DELETE')
                                     <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>

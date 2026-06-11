@@ -10,8 +10,11 @@ use Illuminate\View\View;
 
 class AbsenceController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $search = trim((string) $request->query('search', ''));
+        $status = $request->query('status'); // 'justified' | 'unjustified'
+
         $absencesQuery = Absence::query()
             ->with(['intern.user', 'recordedBy'])
             ->latest('date_absence');
@@ -22,10 +25,19 @@ class AbsenceController extends Controller
         ];
 
         $absences = $absencesQuery
-            ->with(['intern.user', 'recordedBy'])
-            ->paginate(12);
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($inner) use ($search): void {
+                    $inner->whereHas('intern.user', fn ($u) => $u->where('full_name', 'like', "%{$search}%"))
+                        ->orWhereHas('intern', fn ($i) => $i->where('cin', 'like', "%{$search}%"))
+                        ->orWhere('reason', 'like', "%{$search}%");
+                });
+            })
+            ->when($status === 'justified', fn ($query) => $query->where('justified', true))
+            ->when($status === 'unjustified', fn ($query) => $query->where('justified', false))
+            ->paginate(12)
+            ->withQueryString();
 
-        return view('absences.index', compact('absences', 'absenceStats'));
+        return view('absences.index', compact('absences', 'absenceStats', 'search', 'status'));
     }
 
     public function create(): View

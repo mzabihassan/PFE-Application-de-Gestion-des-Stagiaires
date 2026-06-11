@@ -18,30 +18,41 @@ class InternshipController extends Controller
     public function index(Request $request): View
     {
         $status = (string) $request->string('status');
+        $search = (string) $request->string('search');
 
         $internships = Internship::query()
             ->with(['interns.user', 'supervisor', 'responsible'])
             ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($search !== '', fn ($query) => $query->where(function ($sub) use ($search) {
+                $sub->where('title', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%");
+            }))
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
-        return view('internships.index', compact('internships', 'status'));
+        return view('internships.index', compact('internships', 'status', 'search'));
     }
 
     public function supervisorIndex(Request $request): View
     {
         $status = (string) $request->string('status');
+        $search = (string) $request->string('search');
 
         $internships = Internship::query()
             ->with(['interns.user'])
             ->where('supervisor_id', $request->user()->id)
             ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($search !== '', fn ($query) => $query->where(function ($sub) use ($search) {
+                $sub->where('title', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%")
+                    ->orWhereHas('interns.user', fn ($u) => $u->where('full_name', 'like', "%{$search}%"));
+            }))
             ->orderBy('start_date')
             ->paginate(12)
             ->withQueryString();
 
-        return view('internships.my-interns', compact('internships', 'status'));
+        return view('internships.my-interns', compact('internships', 'status', 'search'));
     }
 
     public function supervisorShow(Request $request, Internship $internship): View

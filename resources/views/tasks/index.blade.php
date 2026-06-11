@@ -18,67 +18,49 @@
     $showAllTasks = $showAllTasks ?? false;
 @endphp
 
+<x-ui.page-header title="Gestion des tâches" kicker="Suivi" kicker-icon="bi-kanban-fill"
+                  subtitle="Vue {{ $isKanban ? 'kanban' : 'liste' }} des tâches.">
+    <x-slot:actions>
+        <div class="btn-group" role="group" aria-label="Changer la vue">
+            <a class="btn btn-outline-secondary btn-sm {{ $isKanban ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['view' => 'kanban']) }}"><i class="bi bi-kanban"></i> Kanban</a>
+            <a class="btn btn-outline-secondary btn-sm {{ ! $isKanban ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['view' => 'table']) }}"><i class="bi bi-table"></i> Table</a>
+        </div>
+        @if($canManage)
+            <a href="{{ route('tasks.create') }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> Nouvelle tâche</a>
+        @endif
+    </x-slot:actions>
+</x-ui.page-header>
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <div>
-                <h1 class="h4 mb-0">Gestion des tâches</h1>
-                <p class="text-muted mb-0">Vue {{ $isKanban ? 'kanban' : 'liste' }} des tâches.</p>
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-                <div class="btn-group" role="group" aria-label="Changer la vue">
-                    <a class="btn btn-outline-secondary btn-sm {{ $isKanban ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['view' => 'kanban']) }}">Kanban</a>
-                    <a class="btn btn-outline-secondary btn-sm {{ ! $isKanban ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['view' => 'table']) }}">Table</a>
-                </div>
-                @if($canManage)
-                    <a href="{{ route('tasks.create') }}" class="btn btn-success btn-sm">Nouvelle tâche</a>
-                @endif
-            </div>
-        </div>
-
-        <form method="GET" action="{{ route('tasks.index') }}" class="row g-2 mb-3">
-            <input type="hidden" name="view" value="{{ $view }}">
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (titre, stagiaire, stage)" :preserve="['view' => $view]">
             @if($isEncadrant)
-                <div class="col-md-5">
-                    <select class="form-select" name="internship_id">
-                        <option value="">Tous les stages</option>
-                        @foreach($internships ?? [] as $internship)
-                            <option value="{{ $internship->id }}" @selected((string) $internshipId === (string) $internship->id)>
-                                {{ $internship->title }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <select name="internship_id" class="toolbar-select" data-autosubmit aria-label="Filtrer par stage">
+                    <option value="">Tous les stages</option>
+                    @foreach($internships ?? [] as $internship)
+                        <option value="{{ $internship->id }}" @selected((string) $internshipId === (string) $internship->id)>{{ $internship->title }}</option>
+                    @endforeach
+                </select>
             @else
-                <div class="col-md-4">
-                    <select class="form-select" name="status">
-                        <option value="">Tous les statuts</option>
-                        <option value="a_faire" @selected($status === 'a_faire')>À faire</option>
-                        <option value="en_cours" @selected($status === 'en_cours')>En cours</option>
-                        <option value="termine" @selected($status === 'termine')>Terminé</option>
-                    </select>
-                </div>
+                <select name="status" class="toolbar-select" data-autosubmit aria-label="Filtrer par statut">
+                    <option value="">Tous les statuts</option>
+                    <option value="a_faire" @selected($status === 'a_faire')>À faire</option>
+                    <option value="en_cours" @selected($status === 'en_cours')>En cours</option>
+                    <option value="termine" @selected($status === 'termine')>Terminé</option>
+                </select>
             @endif
+            <select name="due" class="toolbar-select" data-autosubmit aria-label="Filtrer par échéance">
+                <option value="">Toutes les échéances</option>
+                <option value="overdue" @selected($due === 'overdue')>En retard</option>
+                <option value="upcoming" @selected($due === 'upcoming')>À venir</option>
+            </select>
             @if($isIntern)
-                <div class="col-md-4">
-                    <div class="form-check mt-2">
-                        <input
-                            class="form-check-input"
-                            type="checkbox"
-                            id="show_all"
-                            name="show_all"
-                            value="1"
-                            @checked($showAllTasks)
-                            onchange="this.form.submit()"
-                        >
-                        <label class="form-check-label" for="show_all">Afficher toutes les tâches du stage</label>
-                    </div>
-                </div>
+                <label class="toolbar-check">
+                    <input type="checkbox" name="show_all" value="1" @checked($showAllTasks) data-autosubmit class="form-check-input">
+                    <span>Toutes les tâches du stage</span>
+                </label>
             @endif
-            <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" type="submit">Filtrer</button>
-            </div>
-        </form>
+        </x-ui.table-toolbar>
 
         @if($isKanban)
             <div class="kanban-board">
@@ -103,9 +85,9 @@
                                             @if($isIntern && $isOwner) draggable="true" @endif
                                         >
                                             <div class="card-body">
-                                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                                    <div class="fw-semibold">{{ $task->title }}</div>
-                                                    <span class="badge text-bg-light">{{ $task->internship?->title ?? '-' }}</span>
+                                                <div class="kanban-card-title">{{ $task->title }}</div>
+                                                <div class="mt-1">
+                                                    <span class="badge text-bg-light kanban-stage-chip" title="{{ $task->internship?->title }}">{{ $task->internship?->title ?? '-' }}</span>
                                                 </div>
                                                 <div class="small text-muted mt-2">Assignée à : {{ $task->assignedTo?->full_name ?? '-' }}</div>
                                                 <div class="small text-muted">Date limite : {{ $task->due_date?->format('d/m/Y') ?? '-' }}</div>
@@ -134,7 +116,7 @@
                                                 @if($canManage)
                                                     <div class="d-flex flex-wrap gap-2 mt-3">
                                                         <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
-                                                        <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="m-0" onsubmit="return confirm('Supprimer cette tâche ?')">
+                                                        <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="m-0" data-confirm="Cette tâche sera définitivement supprimée." data-confirm-title="Supprimer la tâche ?" data-confirm-ok="Supprimer">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
@@ -173,11 +155,11 @@
                         @forelse($tasks as $task)
                             @php $isOwner = (string) $task->assigned_to === (string) auth()->id(); @endphp
                             <tr>
-                                <td>{{ $task->title }}</td>
+                                <td class="fw-semibold">{{ $task->title }}</td>
                                 <td>{{ $task->internship?->title ?? '-' }}</td>
                                 <td>{{ $task->assignedBy?->full_name }}</td>
                                 <td>{{ $task->assignedTo?->full_name }}</td>
-                                <td>{{ $task->due_date?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="text-nowrap">{{ $task->due_date?->format('d/m/Y') ?? '-' }}</td>
                                 <td>
                                     <select class="form-select form-select-sm task-status" data-url="{{ route('tasks.status', $task) }}">
                                         @foreach(['a_faire' => 'À faire', 'en_cours' => 'En cours', 'termine' => 'Terminé'] as $key => $label)
@@ -208,7 +190,7 @@
                                     @if($canManage)
                                         <div class="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap">
                                             <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
-                                            <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="m-0" onsubmit="return confirm('Supprimer cette tâche ?')">
+                                            <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="m-0" data-confirm="Cette tâche sera définitivement supprimée." data-confirm-title="Supprimer la tâche ?" data-confirm-ok="Supprimer">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger text-nowrap" type="submit">Supprimer</button>
@@ -225,7 +207,7 @@
             </div>
         @endif
 
-        {{ $tasks->links() }}
+        <div class="mt-3">{{ $tasks->links() }}</div>
     </div>
 </div>
 @endsection
@@ -248,7 +230,7 @@
                     ? 'Vous n\'êtes pas autorisé à modifier cette tâche.'
                     : 'Erreur lors de la mise à jour du statut.';
 
-                alert(message);
+                toast(message, 'error');
             });
         });
 
@@ -277,7 +259,7 @@
                     const msg = xhr.status === 403
                         ? 'Non autorisé.'
                         : 'Erreur de sauvegarde.';
-                    alert(msg);
+                    toast(msg, 'error');
                 });
             }, 900);
         });
@@ -314,7 +296,7 @@
                 }
 
                 if (String($card.data('owner-id')) !== String(userId)) {
-                    alert('Vous ne pouvez pas modifier cette tâche.');
+                    toast('Vous ne pouvez pas modifier cette tâche.', 'error');
                     return;
                 }
 
@@ -333,53 +315,10 @@
                         ? 'Vous n\'êtes pas autorisé à modifier cette tâche.'
                         : 'Erreur lors de la mise à jour du statut.';
 
-                    alert(message);
+                    toast(message, 'error');
                 });
             });
         }
     });
 </script>
-@endpush
-
-@push('scripts')
-<style>
-    .kanban-board {
-        padding: 0.25rem;
-    }
-
-    .kanban-column {
-        background: rgba(248, 250, 252, 0.9);
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        border-radius: 1rem;
-        padding: 1rem;
-        min-height: 100%;
-    }
-
-    .kanban-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.75rem;
-    }
-
-    .kanban-body {
-        display: grid;
-        gap: 0.75rem;
-    }
-
-    .kanban-card {
-        border-radius: 0.85rem;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-    }
-
-    .kanban-card[draggable="true"] {
-        cursor: grab;
-    }
-
-    .kanban-drop-target {
-        outline: 2px dashed rgba(15, 23, 42, 0.2);
-        outline-offset: 4px;
-    }
-</style>
 @endpush

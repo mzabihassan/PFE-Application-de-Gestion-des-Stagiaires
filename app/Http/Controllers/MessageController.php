@@ -15,6 +15,7 @@ class MessageController extends Controller
     {
         $user = $request->user();
         $conversationUserId = (int) $request->query('user');
+        $q = trim((string) $request->query('q', ''));
 
         $allMessages = Message::query()
             ->with(['sender', 'receiver'])
@@ -46,6 +47,13 @@ class MessageController extends Controller
             })
             ->sortByDesc(fn ($item) => $item['last_message']?->created_at)
             ->values();
+
+        if ($q !== '') {
+            $needle = mb_strtolower($q);
+            $conversations = $conversations
+                ->filter(fn ($item) => str_contains(mb_strtolower($item['partner']?->full_name ?? ''), $needle))
+                ->values();
+        }
 
         $conversationUser = null;
         $conversationMessages = collect();
@@ -79,7 +87,7 @@ class MessageController extends Controller
             }
         }
 
-        return view('messages.index', compact('conversations', 'conversationUser', 'conversationMessages'));
+        return view('messages.index', compact('conversations', 'conversationUser', 'conversationMessages', 'q'));
     }
 
     public function create(): View

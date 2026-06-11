@@ -20,6 +20,8 @@ class TaskController extends Controller
         $status = (string) $request->string('status');
         $internshipId = (string) $request->string('internship_id');
         $showAllTasks = $request->boolean('show_all');
+        $search = (string) $request->string('search');
+        $due = (string) $request->string('due'); // overdue | upcoming
 
         $tasksQuery = Task::query()
             ->with(['internship.interns.user', 'assignedBy', 'assignedTo'])
@@ -45,6 +47,20 @@ class TaskController extends Controller
             $tasksQuery->where('status', $status);
         }
 
+        if ($search !== '') {
+            $tasksQuery->where(function ($query) use ($search): void {
+                $query->where('title', 'like', "%{$search}%")
+                    ->orWhereHas('internship', fn ($i) => $i->where('title', 'like', "%{$search}%"))
+                    ->orWhereHas('assignedTo', fn ($u) => $u->where('full_name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($due === 'overdue') {
+            $tasksQuery->whereNotNull('due_date')->whereDate('due_date', '<', today())->where('status', '!=', 'termine');
+        } elseif ($due === 'upcoming') {
+            $tasksQuery->whereNotNull('due_date')->whereDate('due_date', '>=', today())->where('status', '!=', 'termine');
+        }
+
         $tasks = $tasksQuery
             ->latest()
             ->paginate(12)
@@ -59,7 +75,7 @@ class TaskController extends Controller
                 ->get();
         }
 
-        return view('tasks.index', compact('tasks', 'status', 'internshipId', 'internships', 'showAllTasks'));
+        return view('tasks.index', compact('tasks', 'status', 'internshipId', 'internships', 'showAllTasks', 'search', 'due'));
     }
 
     public function create(): View

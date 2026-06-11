@@ -3,15 +3,19 @@
 @section('title', 'Messagerie')
 
 @section('content')
+<x-ui.page-header title="Messagerie interne" kicker="Messages" kicker-icon="bi-chat-dots-fill">
+    <x-slot:actions>
+        <a href="{{ route('messages.create') }}" class="btn btn-success btn-sm"><i class="bi bi-pencil-square"></i> Nouveau message</a>
+    </x-slot:actions>
+</x-ui.page-header>
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="h4 mb-0">Messagerie interne</h1>
-            <a href="{{ route('messages.create') }}" class="btn btn-success btn-sm">Nouveau message</a>
-        </div>
 
         <div class="row g-4">
             <div class="col-lg-4">
+                <x-ui.table-toolbar :search="$q" search-name="q" placeholder="Rechercher une conversation"
+                                    :preserve="['user' => request()->query('user')]" />
                 <div class="list-group">
                     @forelse($conversations as $conversation)
                         @php

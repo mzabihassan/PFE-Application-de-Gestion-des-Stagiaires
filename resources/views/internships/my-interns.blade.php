@@ -12,19 +12,14 @@
             </div>
         </div>
 
-        <form method="GET" class="row g-2 mb-3">
-            <div class="col-md-4">
-                <select class="form-select" name="status">
-                    <option value="">Tous les statuts</option>
-                    <option value="planifie" @selected($status === 'planifie')>Planifié</option>
-                    <option value="en_cours" @selected($status === 'en_cours')>En cours</option>
-                    <option value="termine" @selected($status === 'termine')>Terminé</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" type="submit">Filtrer</button>
-            </div>
-        </form>
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (titre, département, stagiaire)">
+            <select name="status" class="toolbar-select" data-autosubmit aria-label="Filtrer par statut">
+                <option value="">Tous les statuts</option>
+                <option value="planifie" @selected($status === 'planifie')>Planifié</option>
+                <option value="en_cours" @selected($status === 'en_cours')>En cours</option>
+                <option value="termine" @selected($status === 'termine')>Terminé</option>
+            </select>
+        </x-ui.table-toolbar>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">

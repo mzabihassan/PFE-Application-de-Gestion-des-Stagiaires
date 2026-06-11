@@ -20,13 +20,22 @@ class InternController extends Controller
     public function index(Request $request): View
     {
         $search = (string) $request->string('search');
-        $showArchived = $request->boolean('archived');
-        $today = today()->toDateString();
+        $status = (string) $request->string('status'); // active | completed | no_internship | archived
         $completedCutoff = today()->subDay()->toDateString();
 
         $interns = Intern::query()
             ->with(['user', 'internships', 'requests'])
-            ->when(! $showArchived, fn ($query) => $query->where('is_archived', false))
+            // Les archivés sont masqués sauf demande explicite.
+            ->when($status === 'archived',
+                fn ($query) => $query->where('is_archived', true),
+                fn ($query) => $query->where('is_archived', false))
+            ->when($status === 'completed', fn ($query) => $query
+                ->whereNotNull('end_date')->where('end_date', '<', $completedCutoff))
+            ->when($status === 'active', fn ($query) => $query
+                ->where(fn ($sub) => $sub->whereNull('end_date')->orWhere('end_date', '>=', $completedCutoff))
+                ->whereHas('internships', fn ($i) => $i->whereNotNull('supervisor_id')))
+            ->when($status === 'no_internship', fn ($query) => $query
+                ->whereDoesntHave('internships', fn ($i) => $i->whereNotNull('supervisor_id')))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('cin', 'like', "%{$search}%")
@@ -40,13 +49,13 @@ class InternController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('interns.index', compact('interns', 'search', 'showArchived'));
+        return view('interns.index', compact('interns', 'search', 'status'));
     }
 
     public function supervisorIndex(Request $request): View
     {
         $search = (string) $request->string('search');
-        $showArchived = false;
+        $status = (string) $request->string('status'); // active | completed | no_internship
         $highlightInternId = $request->integer('highlight');
         $completedCutoff = today()->subDay()->toDateString();
 
@@ -54,6 +63,13 @@ class InternController extends Controller
             ->with(['user', 'internships', 'requests'])
             ->where('is_archived', false)
             ->whereHas('internships', fn ($query) => $query->where('supervisor_id', $request->user()->id))
+            ->when($status === 'completed', fn ($query) => $query
+                ->whereNotNull('end_date')->where('end_date', '<', $completedCutoff))
+            ->when($status === 'active', fn ($query) => $query
+                ->where(fn ($sub) => $sub->whereNull('end_date')->orWhere('end_date', '>=', $completedCutoff))
+                ->whereHas('internships', fn ($i) => $i->whereNotNull('supervisor_id')))
+            ->when($status === 'no_internship', fn ($query) => $query
+                ->whereDoesntHave('internships', fn ($i) => $i->whereNotNull('supervisor_id')))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('cin', 'like', "%{$search}%")
@@ -67,7 +83,7 @@ class InternController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('interns.index', compact('interns', 'search', 'showArchived', 'highlightInternId'));
+        return view('interns.index', compact('interns', 'search', 'status', 'highlightInternId'));
     }
 
     public function create(): View

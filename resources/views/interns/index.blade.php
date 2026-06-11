@@ -10,33 +10,29 @@
     $highlightInternId = $highlightInternId ?? null;
 @endphp
 
+<x-ui.page-header title="Gestion des stagiaires" kicker="Annuaire" kicker-icon="bi-mortarboard-fill">
+    @if(auth()->user()->hasRole('Responsable de competence'))
+        <x-slot:actions>
+            <a href="{{ route('interns.create-intern') }}" class="btn btn-success">
+                <i class="bi bi-person-plus"></i> Nouveau stagiaire
+            </a>
+        </x-slot:actions>
+    @endif
+</x-ui.page-header>
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="h4 mb-0">Gestion des stagiaires</h1>
-            @if(auth()->user()->hasRole('Responsable de competence'))
-                <a href="{{ route('interns.create-intern') }}" class="btn btn-success btn-sm">
-                    <i class="bi bi-person-plus me-1"></i> Nouveau stagiaire
-                </a>
-            @endif
-        </div>
-
-        <form method="GET" class="row g-2 mb-3">
-            <div class="col-md-5">
-                <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Rechercher (CIN, école, spécialité)">
-            </div>
-            @unless($isSupervisor)
-                <div class="col-md-3 d-flex align-items-center">
-                    <div class="form-check mt-2 mt-md-0">
-                        <input class="form-check-input" type="checkbox" value="1" id="archived" name="archived" @checked($showArchived)>
-                        <label class="form-check-label" for="archived">Afficher les archives</label>
-                    </div>
-                </div>
-            @endunless
-            <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" type="submit">Filtrer</button>
-            </div>
-        </form>
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (nom, CIN, école, spécialité)">
+            <select name="status" class="toolbar-select" data-autosubmit aria-label="Filtrer par statut">
+                <option value="">Tous les statuts</option>
+                <option value="active" @selected($status === 'active')>Actifs</option>
+                <option value="completed" @selected($status === 'completed')>Terminés</option>
+                <option value="no_internship" @selected($status === 'no_internship')>Sans stage</option>
+                @unless($isSupervisor)
+                    <option value="archived" @selected($status === 'archived')>Archivés</option>
+                @endunless
+            </select>
+        </x-ui.table-toolbar>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -66,52 +62,58 @@
                             $showHighlight = (int) $highlightInternId === (int) $intern->id;
                         @endphp
                         <tr @class(['table-success' => $showHighlight])>
-                            <td>{{ $intern->cin }}</td>
-                            <td>{{ $intern->user?->full_name ?? 'Non lié' }}</td>
+                            <td class="font-monospace">{{ $intern->cin }}</td>
+                            <td class="fw-semibold">{{ $intern->user?->full_name ?? 'Non lié' }}</td>
                             <td>
                                 <div>{{ $intern->school }}</div>
                                 <small class="text-muted">{{ $intern->specialty }}</small>
                             </td>
-                            <td>{{ $intern->start_date?->format('d/m/Y') }} - {{ $intern->end_date?->format('d/m/Y') }}</td>
+                            <td class="text-nowrap">{{ $intern->start_date?->format('d/m/Y') }} <span class="text-muted">→</span> {{ $intern->end_date?->format('d/m/Y') }}</td>
                             <td>
                                 @statusBadge($intern->is_archived ? 'archive' : ($isCompleted ? 'termine' : ($hasAssignedInternship ? 'en_cours' : 'en_attente')))
                             </td>
                             <td class="text-end">
-                                <a href="{{ $isSupervisor ? route('supervisor.interns.show', $intern) : route('interns.show', $intern) }}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                                <div class="d-inline-flex align-items-center justify-content-end gap-1 flex-wrap">
+                                    <a href="{{ $isSupervisor ? route('supervisor.interns.show', $intern) : route('interns.show', $intern) }}" class="btn btn-sm btn-outline-secondary">Voir</a>
 
-                                @unless($isSupervisor)
-                                    @unless($isHr)
-                                        <a href="{{ route('interns.edit', $intern) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                                    @unless($isSupervisor)
+                                        @unless($isHr)
+                                            <a href="{{ route('interns.edit', $intern) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
 
-                                        @if($intern->is_archived)
-                                            <form action="{{ route('interns.restore', $intern) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button class="btn btn-sm btn-outline-success" type="submit">Restaurer</button>
-                                            </form>
-                                        @elseif($isCompleted)
-                                            <form action="{{ route('interns.archive', $intern) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button class="btn btn-sm btn-outline-warning" type="submit">Archiver</button>
-                                            </form>
+                                            @if($intern->is_archived)
+                                                <form action="{{ route('interns.restore', $intern) }}" method="POST" class="m-0">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button class="btn btn-sm btn-outline-success" type="submit">Restaurer</button>
+                                                </form>
+                                            @elseif($isCompleted)
+                                                <form action="{{ route('interns.archive', $intern) }}" method="POST" class="m-0">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button class="btn btn-sm btn-outline-warning" type="submit">Archiver</button>
+                                                </form>
+                                            @endif
+                                        @endunless
+
+                                        @if($canShowAttestation)
+                                            <a href="{{ route('attestations.show', $intern) }}" class="btn btn-sm btn-outline-info">{{ $isHr ? 'Générer attestation' : 'Attestation' }}</a>
                                         @endif
                                     @endunless
-
-                                    @if($canShowAttestation)
-                                        <a href="{{ route('attestations.show', $intern) }}" class="btn btn-sm btn-outline-info">{{ $isHr ? 'Générer attestation' : 'Attestation' }}</a>
-                                    @endif
-                                @endunless
+                                </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center text-muted">Aucun stagiaire.</td></tr>
+                        <tr><td colspan="6">
+                            <x-ui.empty-state icon="bi-inbox" title="Aucun stagiaire">
+                                Aucun résultat ne correspond à votre recherche.
+                            </x-ui.empty-state>
+                        </td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        {{ $interns->links() }}
+        <div class="mt-3">{{ $interns->links() }}</div>
     </div>
 </div>
 @endsection

@@ -18,6 +18,8 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $search = (string) $request->string('search');
+        $roleId = (string) $request->string('role');
+        $active = $request->query('active'); // '1' | '0'
 
         $users = User::query()
             ->with('role')
@@ -28,11 +30,16 @@ class UserController extends Controller
                         ->orWhereHas('role', fn ($roleQuery) => $roleQuery->where('name', 'like', "%{$search}%"));
                 });
             })
+            ->when($roleId !== '', fn ($query) => $query->where('role_id', $roleId))
+            ->when($active === '1', fn ($query) => $query->where('is_active', true))
+            ->when($active === '0', fn ($query) => $query->where('is_active', false))
             ->orderBy('full_name')
             ->paginate(12)
             ->withQueryString();
 
-        return view('users.index', compact('users', 'search'));
+        $roles = Role::query()->orderBy('name')->get();
+
+        return view('users.index', compact('users', 'search', 'roleId', 'active', 'roles'));
     }
 
     public function create(): View

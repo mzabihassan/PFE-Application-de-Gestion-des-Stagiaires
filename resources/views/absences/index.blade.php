@@ -5,14 +5,16 @@
 @section('content')
 @php $isHr = auth()->user()->hasRole('Responsable RH'); @endphp
 
+<x-ui.page-header title="Suivi des absences" kicker="Absences" kicker-icon="bi-calendar-x-fill">
+    @unless($isHr)
+        <x-slot:actions>
+            <a href="{{ route('absences.create') }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> Nouvelle absence</a>
+        </x-slot:actions>
+    @endunless
+</x-ui.page-header>
+
 <div class="card card-soft fade-in">
     <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="h4 mb-0">Suivi des absences</h1>
-            @unless($isHr)
-                <a href="{{ route('absences.create') }}" class="btn btn-success btn-sm">Nouvelle absence</a>
-            @endunless
-        </div>
 
         @if($isHr)
             <div class="row g-3 mb-3">
@@ -30,6 +32,15 @@
                 </div>
             </div>
         @endif
+
+        {{-- ── Recherche & filtres ──────────────────────────────────── --}}
+        <x-ui.table-toolbar :search="$search" placeholder="Rechercher (stagiaire, CIN, motif)">
+            <select name="status" class="toolbar-select" data-autosubmit aria-label="Filtrer par justification">
+                <option value="">Toutes</option>
+                <option value="unjustified" @selected($status === 'unjustified')>Non justifiées</option>
+                <option value="justified" @selected($status === 'justified')>Justifiées</option>
+            </select>
+        </x-ui.table-toolbar>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -56,7 +67,7 @@
                             @unless($isHr)
                                 <td class="text-end">
                                     <a href="{{ route('absences.edit', $absence) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
-                                    <form action="{{ route('absences.destroy', $absence) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette absence ?')">
+                                    <form action="{{ route('absences.destroy', $absence) }}" method="POST" class="d-inline" data-confirm="Cette absence sera supprimée." data-confirm-title="Supprimer l'absence ?" data-confirm-ok="Supprimer">
                                         @csrf
                                         @method('DELETE')
                                         <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
