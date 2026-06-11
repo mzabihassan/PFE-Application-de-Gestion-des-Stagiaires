@@ -31,13 +31,18 @@
     --hairline:      #E7E7DE;
     --hairline-2:    #DBDCD1;
 
-    /* Signal — electric teal */
-    --accent:        #00B8A3;
-    --accent-press:  #00A08E;
-    --accent-deep:   #04675B;
-    --accent-ink:    #035F54;
-    --accent-wash:   #E2F6F2;
-    --accent-line:   #ABE6DD;
+    /* Signal — ALTEN cyan (cohérent avec la page de connexion) */
+    --accent:        #00AEEF;
+    --accent-press:  #0098D4;
+    --accent-deep:   #045E80;
+    --accent-ink:    #035E88;
+    --accent-wash:   #E4F4FC;
+    --accent-line:   #A9DDF1;
+
+    /* Couleurs de marque ALTEN (signature tricolore) */
+    --alten-red:     #ED1C24;
+    --alten-yellow:  #FFD400;
+    --alten-cyan:    #00AEEF;
 
     /* Secondary signal — amber */
     --amber:         #DE920B;
@@ -61,8 +66,8 @@
     --info-wash:     #E6EFF8;
     --info-line:     #BCD4ED;
 
-    /* Typography */
-    --font-display: 'Fraunces', 'Georgia', 'Times New Roman', serif;
+    /* Typography — Syne (affichage Bauhaus, comme la page de connexion) */
+    --font-display: 'Syne', 'Hanken Grotesk', sans-serif;
     --font-body:    'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono:    'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 
@@ -77,9 +82,9 @@
     --sh-sm: 0 1px 2px rgba(22,32,28,.05), 0 1px 1px rgba(22,32,28,.04);
     --sh-md: 0 4px 14px -6px rgba(22,32,28,.14), 0 2px 5px -3px rgba(22,32,28,.08);
     --sh-lg: 0 18px 48px -20px rgba(22,32,28,.30), 0 8px 18px -12px rgba(22,32,28,.14);
-    --sh-accent: 0 10px 26px -10px rgba(0,184,163,.50);
+    --sh-accent: 0 10px 26px -10px rgba(0,174,239,.50);
 
-    --ring: 0 0 0 3px rgba(0,184,163,.22);
+    --ring: 0 0 0 3px rgba(0,174,239,.22);
 
     --nav-h: 64px;
 }
@@ -113,8 +118,8 @@ body::before {
     inset: 0;
     z-index: -2;
     background:
-        radial-gradient(1100px 620px at 88% -8%, rgba(0,184,163,.10), transparent 60%),
-        radial-gradient(900px 600px at -6% 4%, rgba(222,146,11,.06), transparent 55%),
+        radial-gradient(1100px 620px at 88% -8%, rgba(0,174,239,.11), transparent 60%),
+        radial-gradient(900px 600px at -6% 4%, rgba(237,28,36,.05), transparent 55%),
         linear-gradient(180deg, var(--canvas), var(--canvas-tint));
     pointer-events: none;
 }
@@ -468,6 +473,12 @@ main.container { max-width: min(100% - 2.5rem, 1320px); }
 .btn-link:hover { text-decoration: underline; transform: none; }
 .text-secondary.btn-link, .btn-link.text-secondary { --btn-fg: var(--muted); }
 .text-danger.btn-link, .btn-link.text-danger { --btn-fg: var(--danger-ink); }
+
+/* Icon-only action button (carré compact, libellé via title/aria-label) */
+.btn-icon { width: 2.1rem; height: 2.1rem; padding: 0; gap: 0; flex-shrink: 0; }
+.btn-icon.btn-sm { width: 2rem; height: 2rem; }
+.btn-icon i { font-size: 1rem; line-height: 1; }
+.table .btn-icon { width: 1.95rem; height: 1.95rem; }
 
 /* Button group */
 .btn-group { display: inline-flex; }
@@ -911,6 +922,12 @@ body.modal-open { overflow: hidden; }
     backdrop-filter: saturate(180%) blur(14px);
     border-bottom: 1px solid var(--hairline);
 }
+.app-nav::after {                   /* signature tricolore ALTEN */
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: linear-gradient(90deg, var(--alten-red) 0 33.3%, var(--alten-yellow) 33.3% 66.6%, var(--alten-cyan) 66.6% 100%);
+    opacity: .9;
+}
 .app-nav-inner {
     height: 100%;
     display: flex;
@@ -948,31 +965,81 @@ body.modal-open { overflow: hidden; }
 .nav-spacer { flex: 1; }
 
 .app-nav-user { display: flex; align-items: center; gap: .6rem; flex-shrink: 0; }
-.nav-profile {
-    display: inline-flex; align-items: center; gap: .5rem;
-    max-width: 15rem;
-    padding: .35rem .35rem .35rem .7rem;
+
+/* ── Avatar (réutilisable) ──────────────────────────────────────────────── */
+.avatar {
+    flex-shrink: 0;
+    width: 2.1rem; height: 2.1rem;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: radial-gradient(120% 120% at 30% 20%, #2A3A33, var(--ink) 70%);
+    color: #FBFBF7;
+    font-family: var(--font-mono); font-size: .74rem; font-weight: 700; letter-spacing: .02em;
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--accent-line);
+    transition: box-shadow .18s ease;
+}
+.avatar-lg { width: 2.8rem; height: 2.8rem; font-size: .92rem; }
+
+/* ── Menu compte (avatar + nom/rôle + chevron → dropdown) ───────────────── */
+.nav-account { position: relative; }
+.nav-account-trigger {
+    display: inline-flex; align-items: center; gap: .55rem;
+    max-width: 16rem;
+    padding: .3rem .55rem .3rem .35rem;
     border: 1px solid var(--hairline-2);
     border-radius: 999px;
     background: var(--surface);
-    color: var(--ink-soft);
-    font-size: .8rem; font-weight: 550;
-    text-decoration: none;
-    transition: border-color .15s, background-color .15s;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .15s, background-color .15s, box-shadow .15s;
 }
-.nav-profile:hover { border-color: var(--accent-line); background: var(--surface-2); color: var(--ink); }
-.nav-profile .avatar {
-    width: 1.7rem; height: 1.7rem; flex-shrink: 0;
-    display: grid; place-items: center;
-    border-radius: 50%;
-    background: var(--ink); color: #FBFBF7;
-    font-family: var(--font-display); font-size: .8rem; font-weight: 600;
+.nav-account-trigger:hover { border-color: var(--accent-line); background: var(--surface-2); }
+.nav-account-trigger:hover .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--accent); }
+.nav-account-trigger:focus-visible { outline: none; box-shadow: var(--ring); }
+.nav-account-trigger[aria-expanded="true"] { border-color: var(--accent-line); background: var(--surface-2); }
+
+.nav-profile-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.18; }
+.nav-profile-name { font-size: .82rem; font-weight: 650; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-profile-role { font-size: .68rem; font-weight: 500; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.nav-account-chev { font-size: .7rem; color: var(--faint); transition: transform .2s ease, color .15s; }
+.nav-account-trigger:hover .nav-account-chev { color: var(--muted); }
+.nav-account-trigger[aria-expanded="true"] .nav-account-chev { transform: rotate(180deg); color: var(--accent-ink); }
+
+.nav-account-menu { min-width: 17rem; padding: 0; overflow: hidden; }
+.nav-account-head {
+    display: flex; align-items: center; gap: .75rem;
+    padding: 1rem 1rem .9rem;
+    background: linear-gradient(180deg, var(--accent-wash), var(--surface));
+    border-bottom: 1px solid var(--hairline);
 }
-.nav-profile .nav-profile-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-account-name { font-weight: 650; font-size: .92rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-account-email { font-size: .76rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: .35rem; }
+.nav-account-badge {
+    display: inline-flex; align-items: center;
+    padding: .12rem .5rem;
+    font-size: .66rem; font-weight: 650; letter-spacing: .02em;
+    color: var(--accent-ink); background: var(--surface); border: 1px solid var(--accent-line);
+    border-radius: 999px;
+}
+.nav-account-menu .dropdown-item { margin: .35rem .4rem; width: auto; }
+.nav-account-menu .dropdown-divider { margin: .15rem .4rem; }
+.nav-account-menu form { margin: 0; }
+
+/* Élément de menu sous forme de bouton (déconnexion) */
+button.dropdown-item {
+    border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer;
+    display: flex; align-items: center; gap: .55rem;
+}
+.dropdown-item i { width: 1.1rem; text-align: center; opacity: .85; }
+.dropdown-item-danger { color: var(--danger-ink); }
+.dropdown-item-danger:hover { background: var(--danger-wash); color: var(--danger-ink); }
 
 .nav-toggler {
     display: none;
-    width: 2.4rem; height: 2.4rem;
+    margin-left: auto;              /* pousse le burger à droite sur mobile */
+    flex-shrink: 0;
+    width: 2.6rem; height: 2.6rem;
     border: 1px solid var(--hairline-2); border-radius: var(--r-sm);
     background: var(--surface); color: var(--ink);
     cursor: pointer; font-size: 1.2rem;
@@ -999,8 +1066,14 @@ body.modal-open { overflow: hidden; }
     .app-nav-links .dropdown-menu.show { animation: none; }
     .nav-spacer { display: none; }
     .app-nav-user { flex-direction: column; align-items: stretch; gap: .5rem; }
-    .nav-profile { max-width: none; }
-    .app-nav-user form, .app-nav-user .btn { width: 100%; }
+    /* Le menu compte s'affiche déplié dans le menu mobile */
+    .nav-account { width: 100%; }
+    .nav-account-trigger { max-width: none; width: 100%; }
+    .nav-account-chev { margin-left: auto; }
+    .nav-account .dropdown-menu {
+        position: static; display: block; min-width: 0;
+        box-shadow: none; border: 1px solid var(--hairline); margin-top: .5rem; animation: none;
+    }
 }
 
 /* ---- Page header band --------------------------------------------------- */

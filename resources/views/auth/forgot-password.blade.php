@@ -1,50 +1,40 @@
-@extends('layouts.app')
+@extends('layouts.auth')
 
-@section('title', 'Mot de passe oublie')
+@section('title', 'Mot de passe oublié')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-7 col-lg-6 fade-in">
-        <div class="card card-soft">
-            <div class="card-body p-4 p-md-5">
-                <div class="text-center">
-                    <img src="{{ asset('images/ALTEN-Logo.wine.png') }}" alt="Alten Logo" class="auth-logo mx-auto">
-                    <div class="page-kicker justify-content-center"><i class="bi bi-key"></i> Securite compte</div>
+<div class="auth">
+    @include('partials.auth-brand')
+
+    <main class="auth-form-wrap">
+        <div class="auth-card">
+            <img src="{{ asset('images/alten-logo.webp') }}" alt="ALTEN" class="auth-card-logo">
+            <span class="auth-eyebrow"><i class="bi bi-key-fill"></i> Sécurité du compte</span>
+            <h2 class="auth-card-title">Mot de passe oublié</h2>
+            <p class="auth-card-sub">Saisissez votre adresse e-mail : si un compte y est associé, vous recevrez un lien de réinitialisation.</p>
+
+            <form action="{{ route('forgot.password.perform') }}" method="POST" novalidate>
+                @csrf
+
+                <div class="auth-field">
+                    <label for="email" class="auth-label">Adresse e-mail</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-envelope auth-input-icon"></i>
+                        <input type="email" id="email" name="email" value="{{ old('email') }}"
+                               class="auth-input" placeholder="prenom.nom@internships.local"
+                               autocomplete="email" required autofocus>
+                    </div>
                 </div>
-                <h1 class="h4 mb-3">Mot de passe oublie</h1>
-                <p class="text-muted mb-4">Réinitialisez votre mot de passe avec votre nom complet. L'identifiant est optionnel si votre nom correspond à un seul compte.</p>
 
-                <form action="{{ route('forgot.password.perform') }}" method="POST">
-                    @csrf
+                <button type="submit" class="auth-btn" style="margin-top:.4rem">
+                    <i class="bi bi-send"></i> Envoyer le lien
+                </button>
+            </form>
 
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">Nom complet</label>
-                        <input type="text" id="full_name" name="full_name" value="{{ old('full_name') }}" class="form-control" required autofocus>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Identifiant (optionnel)</label>
-                        <input type="email" id="email" name="email" value="{{ old('email') }}" class="form-control">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Nouveau mot de passe</label>
-                        <input type="password" id="password" name="password" class="form-control" required>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="password_confirmation" class="form-label">Confirmer le mot de passe</label>
-                        <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" required>
-                    </div>
-
-                    <button type="submit" class="btn btn-success w-100">Réinitialiser</button>
-                </form>
-
-                <div class="text-center mt-3">
-                    <a href="{{ route('forgot.options') }}" class="small">Retour aux choix</a>
-                </div>
-            </div>
+            <p class="auth-foot-note">
+                <a href="{{ route('login') }}" class="auth-link auth-back"><i class="bi bi-arrow-left"></i> Retour à la connexion</a>
+            </p>
         </div>
-    </div>
+    </main>
 </div>
 @endsection

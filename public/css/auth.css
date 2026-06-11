@@ -1,0 +1,329 @@
+/* ============================================================================
+   ALTEN · Authentification — "Bauhaus Gateway"
+   Direction : géométrie franche inspirée du logo ALTEN (rouge · jaune · cyan ·
+   noir), panneau de marque sombre à fond animé + panneau formulaire clair.
+   Dépend de app.css (tokens, toasts). Police d'affichage : Syne.
+   ============================================================================ */
+:root {
+    --alten-red:    #ED1C24;
+    --alten-yellow: #FFD400;
+    --alten-cyan:   #00AEEF;
+    --alten-ink:    #0C0F15;
+    --alten-ink-2:  #131925;
+    --alten-line:   rgba(255, 255, 255, .08);
+    --font-bauhaus: 'Syne', 'Hanken Grotesk', sans-serif;
+}
+
+/* ---- Page shell --------------------------------------------------------- */
+.auth-body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--canvas);
+    font-family: var(--font-body);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+}
+.auth-body::before, .auth-body::after { display: none; } /* neutralise l'ambiance d'app.css */
+
+.auth {
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    min-height: 100dvh;
+}
+
+/* ============================================================================
+   PANNEAU DE MARQUE (gauche)
+   ============================================================================ */
+.auth-brand {
+    position: relative;
+    overflow: hidden;
+    background: var(--alten-ink);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    isolation: isolate;
+}
+
+/* --- Fond animé géométrique --- */
+.auth-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.auth-bg::before {            /* grille fine */
+    content: "";
+    position: absolute; inset: -2px;
+    background-image:
+        linear-gradient(var(--alten-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--alten-line) 1px, transparent 1px);
+    background-size: 54px 54px;
+    mask-image: radial-gradient(120% 120% at 30% 20%, #000 35%, transparent 80%);
+    animation: auth-grid 28s linear infinite;
+}
+.auth-bg::after {             /* halo radial */
+    content: "";
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(60% 55% at 18% 12%, rgba(0,174,239,.22), transparent 60%),
+        radial-gradient(50% 50% at 90% 90%, rgba(237,28,36,.18), transparent 60%);
+}
+
+.auth-shape { position: absolute; will-change: transform; }
+/* triangle rouge (écho de la flèche du logo) */
+.auth-shape.tri-red {
+    width: 230px; height: 230px;
+    background: var(--alten-red);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+    top: 14%; left: 8%;
+    opacity: .92;
+    filter: drop-shadow(0 24px 60px rgba(237,28,36,.35));
+    animation: auth-float 18s ease-in-out infinite;
+}
+/* petit triangle cyan */
+.auth-shape.tri-cyan {
+    width: 120px; height: 120px;
+    background: var(--alten-cyan);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    bottom: 16%; left: 20%;
+    opacity: .9;
+    animation: auth-float 22s ease-in-out infinite reverse;
+}
+/* disque jaune */
+.auth-shape.dot-yellow {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: var(--alten-yellow);
+    top: 60%; right: 14%;
+    opacity: .92;
+    filter: drop-shadow(0 20px 50px rgba(255,212,0,.28));
+    animation: auth-drift 24s ease-in-out infinite;
+}
+/* anneau contour blanc */
+.auth-shape.ring {
+    width: 320px; height: 320px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,.16);
+    top: -90px; right: -70px;
+    animation: auth-spin 60s linear infinite;
+}
+.auth-shape.ring::after {
+    content: ""; position: absolute; inset: 38px;
+    border-radius: 50%; border: 1.5px solid rgba(0,174,239,.22);
+}
+/* faisceau diagonal cyan (écho de la diagonale du logo) */
+.auth-beam {
+    position: absolute; z-index: -1;
+    top: -30%; left: 38%;
+    width: 70px; height: 160%;
+    background: linear-gradient(180deg, transparent, rgba(0,174,239,.55), transparent);
+    transform: rotate(18deg);
+    filter: blur(2px);
+    animation: auth-beam 9s ease-in-out infinite;
+}
+
+@keyframes auth-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-26px) rotate(8deg); }
+}
+@keyframes auth-drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-22px, 18px) scale(1.06); }
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+@keyframes auth-grid { to { background-position: 54px 54px, 54px 54px; } }
+@keyframes auth-beam {
+    0%, 100% { opacity: .5; transform: rotate(18deg) translateX(0); }
+    50%      { opacity: .9; transform: rotate(18deg) translateX(28px); }
+}
+
+/* --- Contenu marque --- */
+.auth-brand-inner {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: clamp(2rem, 4vw, 3.6rem);
+}
+/* Wordmark de marque (panneau sombre, gauche) */
+.auth-wordmark {
+    align-self: flex-start;
+    font-family: var(--font-bauhaus);
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: .26em;
+    color: #fff;
+    padding-left: .04em;
+}
+.auth-wordmark::after {
+    content: "";
+    display: block;
+    width: 2.4rem; height: 4px; margin-top: .55rem;
+    background: linear-gradient(90deg, var(--alten-red) 0 33.3%, var(--alten-yellow) 33.3% 66.6%, var(--alten-cyan) 66.6% 100%);
+    border-radius: 2px;
+}
+
+.auth-brand-copy { margin-top: auto; max-width: 30rem; }
+.auth-eyebrow {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-family: var(--font-mono);
+    font-size: .68rem; font-weight: 600;
+    letter-spacing: .22em; text-transform: uppercase;
+    color: var(--alten-cyan);
+}
+.auth-brand-copy .auth-eyebrow { color: var(--alten-yellow); }
+.auth-title {
+    font-family: var(--font-bauhaus);
+    font-weight: 700;
+    font-size: clamp(2.1rem, 3.4vw, 3rem);
+    line-height: 1.04;
+    letter-spacing: -.02em;
+    margin: .9rem 0 .9rem;
+    color: #fff;                                   /* prime sur la règle h1 d'app.css */
+    text-shadow: 0 2px 26px rgba(8, 10, 14, .55);
+}
+.auth-title .accent { color: var(--alten-cyan); }
+.auth-lead { color: rgba(255,255,255,.66); font-size: 1.02rem; line-height: 1.6; margin: 0 0 1.6rem; max-width: 26rem; }
+.auth-points { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.auth-points li { display: flex; align-items: center; gap: .7rem; font-size: .92rem; color: rgba(255,255,255,.82); }
+.auth-points .bullet {
+    flex-shrink: 0; width: 1.5rem; height: 1.5rem;
+    display: grid; place-items: center;
+    border-radius: 6px; font-size: .8rem;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    color: #fff;
+}
+.auth-brand-foot {
+    position: relative;
+    font-family: var(--font-mono);
+    font-size: .72rem; letter-spacing: .04em;
+    color: rgba(255,255,255,.4);
+}
+
+/* ============================================================================
+   PANNEAU FORMULAIRE (droite)
+   ============================================================================ */
+.auth-form-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background: var(--canvas);
+    position: relative;
+}
+.auth-form-wrap::before {     /* fines barres d'accent ALTEN en haut */
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--alten-red) 0 33.3%, var(--alten-yellow) 33.3% 66.6%, var(--alten-cyan) 66.6% 100%);
+}
+.auth-card {
+    width: 100%;
+    max-width: 25rem;
+    animation: auth-in .5s cubic-bezier(.22,.61,.36,1) both;
+}
+@keyframes auth-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.auth-card-logo {
+    display: block;
+    height: 5.2rem;
+    width: auto;
+    margin: 0 auto 1.8rem;
+}
+
+.auth-card-title {
+    font-family: var(--font-bauhaus);
+    font-weight: 700;
+    font-size: 2rem;
+    letter-spacing: -.02em;
+    margin: .7rem 0 .3rem;
+}
+.auth-card-sub { color: var(--muted); margin: 0 0 1.8rem; font-size: .94rem; }
+
+.auth-field { margin-bottom: 1.05rem; }
+.auth-label { display: block; font-size: .82rem; font-weight: 600; color: var(--ink-soft); margin-bottom: .4rem; }
+.auth-input-wrap { position: relative; display: flex; align-items: center; }
+.auth-input-icon { position: absolute; left: .85rem; color: var(--faint); font-size: .95rem; pointer-events: none; }
+.auth-input {
+    width: 100%;
+    height: 3rem;
+    padding: .5rem 1rem .5rem 2.5rem;
+    font-family: var(--font-body);
+    font-size: .95rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--hairline-2);
+    border-radius: var(--r-sm);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.auth-input::placeholder { color: var(--faint); }
+.auth-input:focus { border-color: var(--alten-cyan); box-shadow: 0 0 0 3px rgba(0,174,239,.18); }
+.auth-input.has-toggle { padding-right: 3rem; }
+.auth-toggle {
+    position: absolute; right: .35rem;
+    width: 2.3rem; height: 2.3rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; background: transparent; color: var(--muted);
+    border-radius: var(--r-xs); cursor: pointer; font-size: 1rem;
+    transition: color .15s, background-color .15s;
+}
+.auth-toggle:hover { color: var(--ink); background: var(--surface-2); }
+
+.auth-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; margin: .2rem 0 1.5rem;
+}
+.auth-check { display: inline-flex; align-items: center; gap: .5rem; font-size: .86rem; color: var(--ink-soft); cursor: pointer; }
+.auth-check input {
+    width: 1.1rem; height: 1.1rem; margin: 0; cursor: pointer;
+    appearance: none; border: 1.5px solid var(--hairline-2); border-radius: 5px; background: var(--surface);
+    transition: background-color .15s, border-color .15s;
+}
+.auth-check input:checked {
+    background: var(--alten-cyan); border-color: var(--alten-cyan);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center;
+}
+.auth-link { font-size: .86rem; font-weight: 600; color: var(--alten-cyan); text-decoration: none; }
+.auth-link:hover { text-decoration: underline; }
+
+.auth-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    width: 100%; height: 3rem;
+    font-family: var(--font-body); font-size: .95rem; font-weight: 650;
+    color: #fff; background: var(--alten-ink);
+    border: 0; border-radius: var(--r-sm);
+    cursor: pointer;
+    box-shadow: 0 12px 28px -12px rgba(12,15,21,.8);
+    transition: transform .14s, box-shadow .18s, background-color .15s;
+}
+.auth-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -12px rgba(0,174,239,.5); }
+.auth-btn:active { transform: translateY(0); }
+.auth-btn:focus-visible { outline: 2px solid var(--alten-cyan); outline-offset: 3px; }
+
+.auth-foot-note {
+    margin: 1.5rem 0 0; padding-top: 1.2rem;
+    border-top: 1px solid var(--hairline);
+    font-size: .82rem; color: var(--muted); text-align: center;
+}
+.auth-back { display: inline-flex; align-items: center; gap: .4rem; }
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+@media (max-width: 900px) {
+    .auth { grid-template-columns: 1fr; }
+    .auth-brand { min-height: 230px; }
+    .auth-brand-inner { gap: 1.2rem; padding: 1.6rem; }
+    .auth-brand-copy { margin-top: 0; }
+    .auth-title { font-size: clamp(1.6rem, 7vw, 2.1rem); margin: .5rem 0; }
+    .auth-lead, .auth-points { display: none; }   /* garde l'en-tête compact sur mobile */
+    .auth-shape.ring, .auth-shape.dot-yellow, .auth-shape.tri-cyan { display: none; }
+    .auth-shape.tri-red { width: 120px; height: 120px; top: -18px; left: auto; right: 12%; opacity: .85; }
+    .auth-logo-tile { padding: .55rem .7rem; }
+    .auth-logo-tile img { height: 3rem; }
+}
+@media (max-width: 480px) {
+    .auth-form-wrap { padding: 1.6rem 1.25rem 2.4rem; }
+    .auth-card-title { font-size: 1.7rem; }
+}
+
+/* ---- Reduced motion ----------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .auth-shape, .auth-beam, .auth-bg::before, .auth-card { animation: none !important; }
+}

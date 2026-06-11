@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Notifications\ResetPasswordLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -41,82 +45,81 @@ class AuthController extends Controller
             ->onlyInput('email');
     }
 
-    public function showForgotOptions(): View
-    {
-        return view('auth.forgot-options');
-    }
-
-    public function showForgotIdentifier(): View
-    {
-        return view('auth.forgot-identifier');
-    }
-
-    public function forgotIdentifier(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:120'],
-        ]);
-
-        $users = User::query()
-            ->where('is_active', true)
-            ->where('full_name', 'like', '%' . $validated['full_name'] . '%')
-            ->orderBy('full_name')
-            ->limit(5)
-            ->get(['full_name', 'email']);
-
-        if ($users->isEmpty()) {
-            return back()
-                ->withErrors(['full_name' => 'Aucun compte actif ne correspond à ce nom.'])
-                ->onlyInput('full_name');
-        }
-
-        return back()
-            ->with('identifier_results', $users->map(fn (User $user): string => "{$user->full_name} : {$user->email}")->all())
-            ->withInput();
-    }
-
+    /** Formulaire : demander un lien de réinitialisation (par e-mail). */
     public function showForgotPassword(): View
     {
         return view('auth.forgot-password');
     }
 
+    /** Envoie un lien de réinitialisation si l'e-mail correspond à un compte actif. */
     public function forgotPassword(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:120'],
-            'email' => ['nullable', 'email', 'max:120'],
+            'email' => ['required', 'email', 'max:120'],
+        ]);
+
+        $user = User::query()
+            ->where('email', $validated['email'])
+            ->where('is_active', true)
+            ->first();
+
+        // On n'envoie le lien que si l'e-mail correspond à un compte existant.
+        if ($user !== null) {
+            $token = Str::random(64);
+
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                ['token' => Hash::make($token), 'created_at' => now()],
+            );
+
+            $resetUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
+            $user->notify(new ResetPasswordLink($resetUrl));
+        }
+
+        // Message neutre (on ne révèle pas si l'adresse existe).
+        return back()->with('success', 'Si un compte est associé à cette adresse, un lien de réinitialisation vient d’être envoyé.');
+    }
+
+    /** Formulaire : choisir un nouveau mot de passe à partir du lien. */
+    public function showResetPassword(Request $request, string $token): View
+    {
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => (string) $request->query('email', ''),
+        ]);
+    }
+
+    /** Applique le nouveau mot de passe après vérification du jeton. */
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $query = User::query()
-            ->where('is_active', true)
-            ->where('full_name', $validated['full_name']);
+        $record = DB::table('password_reset_tokens')->where('email', $validated['email'])->first();
 
-        if (! empty($validated['email'])) {
-            $query->where('email', $validated['email']);
+        if ($record === null || ! Hash::check($validated['token'], $record->token)) {
+            return back()->with('error', 'Ce lien de réinitialisation est invalide.')->onlyInput('email');
         }
 
-        $users = $query->limit(2)->get();
+        if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $validated['email'])->delete();
 
-        if ($users->isEmpty()) {
-        return back()
-            ->withErrors(['full_name' => 'Aucun compte actif ne correspond aux informations saisies.'])
-                ->onlyInput('full_name', 'email');
+            return redirect()->route('forgot.password')->with('error', 'Ce lien a expiré. Veuillez en demander un nouveau.');
         }
 
-        if ($users->count() > 1) {
-            return back()
-                ->withErrors(['email' => 'Plusieurs comptes portent ce nom. Saisissez aussi votre identifiant.'])
-                ->onlyInput('full_name', 'email');
+        $user = User::query()->where('email', $validated['email'])->first();
+
+        if ($user === null) {
+            return back()->with('error', 'Aucun compte ne correspond à cette adresse.');
         }
 
-        $users->first()->update([
-            'password_hash' => Hash::make($validated['password']),
-        ]);
+        $user->update(['password_hash' => Hash::make($validated['password'])]);
+        DB::table('password_reset_tokens')->where('email', $validated['email'])->delete();
 
-        return redirect()
-            ->route('login')
-            ->with('success', 'Mot de passe réinitialisé. Vous pouvez vous connecter.');
+        return redirect()->route('login')->with('success', 'Mot de passe réinitialisé. Vous pouvez vous connecter.');
     }
 
     public function logout(Request $request): RedirectResponse

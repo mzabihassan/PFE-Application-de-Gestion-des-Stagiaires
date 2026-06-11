@@ -74,29 +74,29 @@
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex align-items-center justify-content-end gap-1 flex-wrap">
-                                    <a href="{{ $isSupervisor ? route('supervisor.interns.show', $intern) : route('interns.show', $intern) }}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                                    <a href="{{ $isSupervisor ? route('supervisor.interns.show', $intern) : route('interns.show', $intern) }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Voir" aria-label="Voir"><i class="bi bi-eye"></i></a>
 
                                     @unless($isSupervisor)
                                         @unless($isHr)
-                                            <a href="{{ route('interns.edit', $intern) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                                            <a href="{{ route('interns.edit', $intern) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
 
                                             @if($intern->is_archived)
                                                 <form action="{{ route('interns.restore', $intern) }}" method="POST" class="m-0">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button class="btn btn-sm btn-outline-success" type="submit">Restaurer</button>
+                                                    <button class="btn btn-sm btn-outline-success btn-icon" type="submit" title="Restaurer" aria-label="Restaurer"><i class="bi bi-arrow-counterclockwise"></i></button>
                                                 </form>
                                             @elseif($isCompleted)
                                                 <form action="{{ route('interns.archive', $intern) }}" method="POST" class="m-0">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button class="btn btn-sm btn-outline-warning" type="submit">Archiver</button>
+                                                    <button class="btn btn-sm btn-outline-warning btn-icon" type="submit" title="Archiver" aria-label="Archiver"><i class="bi bi-archive"></i></button>
                                                 </form>
                                             @endif
                                         @endunless
 
                                         @if($canShowAttestation)
-                                            <a href="{{ route('attestations.show', $intern) }}" class="btn btn-sm btn-outline-info">{{ $isHr ? 'Générer attestation' : 'Attestation' }}</a>
+                                            <a href="{{ route('attestations.show', $intern) }}" class="btn btn-sm btn-outline-info btn-icon" title="{{ $isHr ? 'Générer attestation' : 'Attestation' }}" aria-label="{{ $isHr ? 'Générer attestation' : 'Attestation' }}"><i class="bi bi-award"></i></a>
                                         @endif
                                     @endunless
                                 </div>

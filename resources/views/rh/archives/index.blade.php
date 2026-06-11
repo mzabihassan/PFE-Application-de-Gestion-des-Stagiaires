@@ -29,8 +29,8 @@
                             <td>{{ $requestItem->rhProcessor?->full_name ?? '-' }}</td>
                             <td class="text-end">
                                 <div class="d-inline-flex justify-content-end gap-1 flex-nowrap">
-                                    <a href="{{ route('attestations.show', $requestItem->intern) }}" class="btn btn-sm btn-outline-primary text-nowrap">Voir attestation</a>
-                                    <a href="{{ route('rh.archives.download', $requestItem) }}" class="btn btn-sm btn-outline-secondary text-nowrap">Télécharger PDF</a>
+                                    <a href="{{ route('attestations.show', $requestItem->intern) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Voir l'attestation" aria-label="Voir l'attestation"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ route('rh.archives.download', $requestItem) }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Télécharger le PDF" aria-label="Télécharger le PDF"><i class="bi bi-download"></i></a>
                                 </div>
                             </td>
                         </tr>

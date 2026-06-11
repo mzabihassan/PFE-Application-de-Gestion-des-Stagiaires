@@ -56,11 +56,12 @@
     $moreActive = collect($more)->contains('active', true);
 
     $roleName = $authUser->role?->name ?? '-';
-    $profileLabel = $authUser->full_name . ' (' . $roleName . ')';
+    $roleLabel = $roleName;
     if ($authUser->hasRole('Stagiaire') && $authUser->intern !== null) {
         $isActiveIntern = $authUser->intern->internships()->where('status', 'en_cours')->exists();
-        $profileLabel = $authUser->full_name . ' (' . $roleName . '/' . ($isActiveIntern ? 'actif' : 'inactif') . ')';
+        $roleLabel = $roleName . ' · ' . ($isActiveIntern ? 'actif' : 'inactif');
     }
+    $profileLabel = $authUser->full_name . ' — ' . $roleLabel;
 
     $nameParts = preg_split('/\s+/', trim((string) $authUser->full_name));
     $initials = strtoupper(
@@ -106,14 +107,36 @@
             <span class="nav-spacer"></span>
 
             <div class="app-nav-user">
-                <a class="nav-profile" href="{{ route('profile.edit') }}" title="{{ $profileLabel }}">
-                    <span class="avatar">{{ $initials }}</span>
-                    <span class="nav-profile-label">{{ $profileLabel }}</span>
-                </a>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button class="btn btn-primary btn-sm" type="submit">Déconnexion</button>
-                </form>
+                <div class="dropdown nav-account">
+                    <button class="nav-account-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{{ $profileLabel }}">
+                        <span class="avatar">{{ $initials }}</span>
+                        <span class="nav-profile-text">
+                            <span class="nav-profile-name">{{ $authUser->full_name }}</span>
+                            <span class="nav-profile-role">{{ $roleLabel }}</span>
+                        </span>
+                        <i class="bi bi-chevron-down nav-account-chev"></i>
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end nav-account-menu">
+                        <div class="nav-account-head">
+                            <span class="avatar avatar-lg">{{ $initials }}</span>
+                            <div class="min-w-0">
+                                <div class="nav-account-name">{{ $authUser->full_name }}</div>
+                                <div class="nav-account-email">{{ $authUser->email }}</div>
+                                <span class="nav-account-badge">{{ $roleLabel }}</span>
+                            </div>
+                        </div>
+
+                        <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="bi bi-person-gear"></i> Mon profil</a>
+
+                        <hr class="dropdown-divider">
+
+                        <form action="{{ route('logout') }}" method="POST" class="m-0">
+                            @csrf
+                            <button type="submit" class="dropdown-item dropdown-item-danger"><i class="bi bi-box-arrow-right"></i> Déconnexion</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

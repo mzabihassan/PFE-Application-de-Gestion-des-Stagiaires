@@ -47,11 +47,11 @@
                                 @statusBadge($user->is_active ? 'valide' : 'archive')
                             </td>
                             <td class="text-end">
-                                <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                                <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
                                 <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" data-confirm="Cet utilisateur sera définitivement supprimé." data-confirm-title="Supprimer l'utilisateur ?" data-confirm-ok="Supprimer">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
+                                    <button class="btn btn-sm btn-outline-danger btn-icon" type="submit" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash3"></i></button>
                                 </form>
                             </td>
                         </tr>

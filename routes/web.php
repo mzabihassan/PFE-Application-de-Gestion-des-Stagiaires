@@ -22,11 +22,11 @@ Route::redirect('/', '/login');
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.perform');
-    Route::get('/compte-oublie', [AuthController::class, 'showForgotOptions'])->name('forgot.options');
-    Route::get('/identifiant-oublie', [AuthController::class, 'showForgotIdentifier'])->name('forgot.identifier');
-    Route::post('/identifiant-oublie', [AuthController::class, 'forgotIdentifier'])->name('forgot.identifier.perform');
+    // Réinitialisation du mot de passe par e-mail (lien de réinitialisation).
     Route::get('/mot-de-passe-oublie', [AuthController::class, 'showForgotPassword'])->name('forgot.password');
     Route::post('/mot-de-passe-oublie', [AuthController::class, 'forgotPassword'])->name('forgot.password.perform');
+    Route::get('/reinitialiser-mot-de-passe/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::post('/reinitialiser-mot-de-passe', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
 Route::middleware('auth')->group(function (): void {

@@ -60,13 +60,13 @@
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap">
-                                    <a href="{{ route('internships.edit', $internship) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
-                                    <a href="{{ route('internships.convention', $internship) }}" class="btn btn-sm btn-outline-info text-nowrap">Convention</a>
+                                    <a href="{{ route('internships.edit', $internship) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
+                                    <a href="{{ route('internships.convention', $internship) }}" class="btn btn-sm btn-outline-info btn-icon" title="Convention" aria-label="Convention"><i class="bi bi-file-earmark-text"></i></a>
                                     @unless($isHr)
                                         <form action="{{ route('internships.destroy', $internship) }}" method="POST" class="m-0" data-confirm="Ce stage sera définitivement supprimé." data-confirm-title="Supprimer le stage ?" data-confirm-ok="Supprimer">
                                             @csrf
                                             @method('DELETE')
-                                            <button class="btn btn-sm btn-outline-danger text-nowrap" type="submit">Supprimer</button>
+                                            <button class="btn btn-sm btn-outline-danger btn-icon" type="submit" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash3"></i></button>
                                         </form>
                                     @endunless
                                 </div>

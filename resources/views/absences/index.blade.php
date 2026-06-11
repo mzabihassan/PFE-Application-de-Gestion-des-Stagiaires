@@ -66,11 +66,11 @@
                             <td>{{ $absence->recordedBy?->full_name }}</td>
                             @unless($isHr)
                                 <td class="text-end">
-                                    <a href="{{ route('absences.edit', $absence) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                                    <a href="{{ route('absences.edit', $absence) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
                                     <form action="{{ route('absences.destroy', $absence) }}" method="POST" class="d-inline" data-confirm="Cette absence sera supprimée." data-confirm-title="Supprimer l'absence ?" data-confirm-ok="Supprimer">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
+                                        <button class="btn btn-sm btn-outline-danger btn-icon" type="submit" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash3"></i></button>
                                     </form>
                                 </td>
                             @endunless

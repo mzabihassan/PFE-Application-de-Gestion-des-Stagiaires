@@ -202,6 +202,18 @@
     document.addEventListener('click', function (e) {
         var t;
 
+        if ((t = closest(e.target, '[data-toggle-password]'))) {
+            var pwd = document.getElementById(t.getAttribute('data-toggle-password'));
+            if (pwd) {
+                var reveal = pwd.type === 'password';
+                pwd.type = reveal ? 'text' : 'password';
+                var ic = t.querySelector('i');
+                if (ic) ic.className = 'bi ' + (reveal ? 'bi-eye-slash' : 'bi-eye');
+                t.setAttribute('aria-label', reveal ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+            }
+            return;
+        }
+
         if ((t = closest(e.target, '[data-bs-dismiss="alert"]'))) {
             var a = closest(t, '.alert'); if (a) a.remove(); return;
         }

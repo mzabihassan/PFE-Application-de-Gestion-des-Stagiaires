@@ -115,11 +115,11 @@
                                                 @endif
                                                 @if($canManage)
                                                     <div class="d-flex flex-wrap gap-2 mt-3">
-                                                        <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                                                        <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
                                                         <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="m-0" data-confirm="Cette tâche sera définitivement supprimée." data-confirm-title="Supprimer la tâche ?" data-confirm-ok="Supprimer">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
+                                                            <button class="btn btn-sm btn-outline-danger btn-icon" type="submit" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash3"></i></button>
                                                         </form>
                                                     </div>
                                                 @endif
@@ -189,11 +189,11 @@
                                 <td class="text-end">
                                     @if($canManage)
                                         <div class="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap">
-                                            <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                                            <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
                                             <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="m-0" data-confirm="Cette tâche sera définitivement supprimée." data-confirm-title="Supprimer la tâche ?" data-confirm-ok="Supprimer">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="btn btn-sm btn-outline-danger text-nowrap" type="submit">Supprimer</button>
+                                                <button class="btn btn-sm btn-outline-danger btn-icon" type="submit" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash3"></i></button>
                                             </form>
                                         </div>
                                     @endif
